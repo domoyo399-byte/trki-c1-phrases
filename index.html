@@ -124,6 +124,15 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
 
   <section id="review" class="view">
     <h2>今日复习</h2>
+
+      <div class="panel hidden" id="resumePanel">
+        <h3>未完成训练</h3>
+        <div class="muted" id="resumeText"></div>
+        <div class="actions">
+          <button class="primary" id="resumeSession">继续上次训练</button>
+          <button id="discardSession">放弃这轮</button>
+        </div>
+      </div>
     <div class="panel">
       <div class="actions">
         <button class="primary" id="startWriting">✍️ 开始写作调用</button>
@@ -165,49 +174,10 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
 
 <script>
 const STORAGE_KEY="trki_c1_phrase_db_v1";
+const SESSION_KEY="trki_c1_phrase_session_v1";
 const DAY=86400000;
 
-const DEMO=[
-  {
-    id:"not_stolko_skolko",
-    phrase:"Речь идёт не столько о…, сколько о…",
-    functionZh:"与其说重点在 A，不如说在 B；用来修正讨论焦点。",
-    pattern:"не столько о A, сколько о B",
-    sourceExample:"Речь идёт не столько о нехватке времени, сколько о неспособности правильно его распределять.",
-    transferExamples:[
-      "Речь идёт не столько о деньгах, сколько о времени.",
-      "Речь идёт не столько о знаниях, сколько об умении их применять."
-    ],
-    source:"演示语料",
-    tags:["通用","论证","写作","口语"],
-    evaluator:{critical:["речь идет","не столько","сколько"],key:["о"]},
-    writingHistory:[],speakingHistory:[]
-  },
-  {
-    id:"nelzya_ne_uchityvat",
-    phrase:"Нельзя не учитывать тот факт, что…",
-    functionZh:"不能忽视 / 必须考虑到某个事实。",
-    pattern:"Нельзя не учитывать тот факт, что + 从句",
-    sourceExample:"Нельзя не учитывать тот факт, что условия жизни заметно изменились.",
-    transferExamples:[],
-    source:"演示语料",
-    tags:["通用","论证","写作"],
-    evaluator:{critical:["нельзя не учитывать","тот факт","что"],key:[]},
-    writingHistory:[],speakingHistory:[]
-  },
-  {
-    id:"ya_by_ne_stala",
-    phrase:"Я бы не стала делать столь однозначный вывод.",
-    functionZh:"礼貌表达：我不会这么快下如此绝对的结论。",
-    pattern:"Я бы не стала + инф.",
-    sourceExample:"Я бы не стала делать столь однозначный вывод.",
-    transferExamples:[],
-    source:"演示语料",
-    tags:["口语","立场","反驳"],
-    evaluator:{critical:["я бы не стала","делать","однозначный вывод"],key:["столь"]},
-    writingHistory:[],speakingHistory:[]
-  }
-];
+const DEMO=[];
 
 function clone(x){return JSON.parse(JSON.stringify(x))}
 function stripMarks(s){return (s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
@@ -301,6 +271,41 @@ function scoreWriting(p,answer){
   return {score:Math.max(0,Math.min(100,score)),criticalErrors:criticalMiss.length,keyErrors:keyMiss.length,criticalMiss,keyMiss,similarity:Math.round(sim*100)}
 }
 function intervalFromScore(score,criticalErrors){if(criticalErrors>0)return 1;if(score>=95)return 7;if(score>=90)return 4;if(score>=80)return 2;return 1}
+
+function savedPhraseSession(){
+  try{
+    const s=JSON.parse(localStorage.getItem(SESSION_KEY)||"null");
+    if(!s||!Array.isArray(s.ids)||!s.mode)return null;
+    const valid=new Set(db.phrases.map(x=>x.id));
+    s.ids=s.ids.filter(id=>valid.has(id));
+    s.i=Math.max(0,Math.min(Number(s.i)||0,s.ids.length));
+    if(!s.ids.length||s.i>=s.ids.length){localStorage.removeItem(SESSION_KEY);return null}
+    return s
+  }catch(e){return null}
+}
+function renderResume(){
+  const el=document.getElementById("resumePanel");if(!el)return;
+  const s=savedPhraseSession();
+  if(!s){el.classList.add("hidden");return}
+  document.getElementById("resumeText").textContent=`${s.mode==="writing"?"写作调用":"口语调用"} · ${s.i+1}/${s.ids.length} · 已自动保存`;
+  el.classList.remove("hidden")
+}
+function persistPhraseSession(){
+  if(!session.deck.length||session.i>=session.deck.length){localStorage.removeItem(SESSION_KEY);renderResume();return}
+  localStorage.setItem(SESSION_KEY,JSON.stringify({
+    format:"TRKI-C1-PHRASE-SESSION",version:1,mode:session.mode,
+    ids:session.deck.map(x=>x.id),i:session.i,savedAt:Date.now()
+  }));
+  renderResume()
+}
+function clearPhraseSession(){localStorage.removeItem(SESSION_KEY);renderResume()}
+function resumePhraseSession(){
+  const s=savedPhraseSession();if(!s){alert("没有可继续的训练。");renderResume();return}
+  const map=new Map(db.phrases.map(x=>[x.id,x]));
+  session={mode:s.mode,deck:s.ids.map(id=>map.get(id)).filter(Boolean),i:s.i,pending:null};
+  showView("review");renderTest()
+}
+
 function start(mode){
   session.mode=mode;
   const field=mode==="writing"?"nextWritingDue":"nextSpeakingDue";
@@ -310,12 +315,12 @@ function start(mode){
     const bv=mode==="writing"?(writingAvgOf(b)??0):recent(b,"speakingHistory",3).filter(x=>x.grade===2).length*30;
     return ad-bd||av-bv
   });
-  session.deck=deck.slice(0,Math.min(10,deck.length));session.i=0;renderTest();showView("review")
+  session.deck=deck.slice(0,Math.min(10,deck.length));session.i=0;persistPhraseSession();renderTest();showView("review")
 }
 function renderTest(){
   const area=document.getElementById("testArea");
   if(session.i>=session.deck.length){
-    area.innerHTML='<div style="text-align:center"><b>这一轮完成了。</b><div class="muted" style="margin-top:8px">正确率和关键错误记录已经更新。</div></div>';
+    clearPhraseSession();area.innerHTML='<div style="text-align:center"><b>这一轮完成了。</b><div class="muted" style="margin-top:8px">正确率和关键错误记录已经更新。</div></div>';
     renderOverview();renderBrowse();return
   }
   const p=session.deck[session.i];
@@ -357,7 +362,7 @@ function saveWritingResult(){
   p.writingHistory.push({time:Date.now(),answer,score:r.score,criticalErrors:r.criticalErrors,keyErrors:r.keyErrors});
   if(p.writingHistory.length>30)p.writingHistory=p.writingHistory.slice(-30);
   p.nextWritingDue=Date.now()+intervalFromScore(r.score,r.criticalErrors)*DAY;
-  save();session.pending=null;session.i++;renderTest();renderOverview()
+  save();session.pending=null;session.i++;persistPhraseSession();renderTest();renderOverview()
 }
 function revealSpeaking(){
   const p=session.deck[session.i];
@@ -370,7 +375,7 @@ function gradeSpeaking(grade){
   p.speakingHistory.push({time:Date.now(),grade});
   if(p.speakingHistory.length>30)p.speakingHistory=p.speakingHistory.slice(-30);
   p.nextSpeakingDue=Date.now()+(grade===2?4:grade===1?2:1)*DAY;
-  save();session.i++;renderTest();renderOverview()
+  save();session.i++;persistPhraseSession();renderTest();renderOverview()
 }
 function mergePhrase(oldp,newp){
   const keep=["writingHistory","speakingHistory","nextWritingDue","nextSpeakingDue"];
@@ -415,7 +420,7 @@ setupTags();renderOverview();renderBrowse();showView((location.hash||"#overview"
 });
 document.getElementById("exportBackup").onclick=()=>{
   const d=new Date().toISOString().slice(0,10);
-  download("TRKI_C1_phrase_backup_"+d+".json",JSON.stringify({format:"TRKI-C1-PHRASES-BACKUP",version:1,exportedAt:new Date().toISOString(),db},null,2))
+  download("TRKI_C1_phrase_backup_"+d+".json",JSON.stringify({format:"TRKI-C1-PHRASES-BACKUP",version:1.1,exportedAt:new Date().toISOString(),db,session:savedPhraseSession()},null,2))
 };
 document.getElementById("exportContent").onclick=()=>{
   const d=new Date().toISOString().slice(0,10);
@@ -423,7 +428,7 @@ document.getElementById("exportContent").onclick=()=>{
 };
 document.getElementById("importBackup").onchange=e=>readJSON(e.target.files[0],x=>{
   const obj=x&&x.db?x.db:x;if(!obj||!Array.isArray(obj.phrases)){alert("不是有效的语料库备份");return}
-  db=obj;save();
+  db=obj;save();if(x&&x.session)localStorage.setItem(SESSION_KEY,JSON.stringify(x.session));else localStorage.removeItem(SESSION_KEY);
 function showView(id, pushHash=true){
   const target=document.getElementById(id)||document.getElementById("overview");
   document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v===target));
@@ -443,6 +448,8 @@ setupTags();renderOverview();renderBrowse();showView((location.hash||"#overview"
 });
 document.getElementById("startWriting").onclick=()=>start("writing");
 document.getElementById("startSpeaking").onclick=()=>start("speaking");
+document.getElementById("resumeSession").onclick=resumePhraseSession;
+document.getElementById("discardSession").onclick=()=>{if(confirm("放弃这轮未完成训练？已经记录的成绩不会删除。"))clearPhraseSession()};
 
 
 function showView(id, pushHash=true){
@@ -460,7 +467,7 @@ document.querySelectorAll(".backhome").forEach(b=>b.onclick=()=>showView(b.datas
 window.addEventListener("popstate",()=>showView((location.hash||"#overview").slice(1),false));
 window.addEventListener("hashchange",()=>showView((location.hash||"#overview").slice(1),false));
 
-setupTags();renderOverview();renderBrowse();showView((location.hash||"#overview").slice(1),false);
+setupTags();renderOverview();renderBrowse();renderResume();showView((location.hash||"#overview").slice(1),false);
 </script>
 </body>
 </html>
