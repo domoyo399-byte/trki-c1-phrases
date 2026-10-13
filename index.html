@@ -4,92 +4,90 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>ТРКИ-C1 输出语料库</title>
+<title>ТРКИ-C1 输出语料库 v2.3</title>
 <style>
 :root{
   --bg:#f5f5f8;--p:#fff;--t:#17171a;--m:#777780;--l:#dddde5;
-  --ac:#5b5bd6;--ok:#eaf7ed;--mid:#fff5d3;--bad:#fff0f0;--chip:#f0f0f5;
+  --ac:#6868e8;--ok:#eaf7ed;--mid:#fff5d3;--bad:#fff0f0;--chip:#f0f0f5;
 }
 @media(prefers-color-scheme:dark){
-  :root{--bg:#111116;--p:#1d1d23;--t:#f5f5f6;--m:#aaaab4;--l:#393942;--ac:#9292ff;--ok:#203127;--mid:#3b351f;--bad:#3c2424;--chip:#292930}
+  :root{--bg:#101015;--p:#1d1d23;--t:#f5f5f6;--m:#aaaab4;--l:#393942;--ac:#8f8fff;--ok:#203127;--mid:#3b351f;--bad:#3c2424;--chip:#292930}
 }
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
+html{scroll-behavior:auto}
 body{margin:0;background:var(--bg);color:var(--t);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Noto Sans SC",Arial,sans-serif}
 button,input,select,textarea,.filebtn{font:inherit;color:var(--t);background:var(--p);border:1px solid var(--l);border-radius:13px;padding:12px}
-button,.filebtn{cursor:pointer}
-textarea{width:100%;min-height:105px;resize:vertical}
-.wrap{max-width:880px;margin:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(48px + env(safe-area-inset-bottom,0px))}
-h1{font-size:22px;margin:0 0 6px}
-h2{font-size:19px;margin:22px 0 8px}
-h3{font-size:16px;margin:0 0 10px}
+button,.filebtn,summary{cursor:pointer}
+textarea{width:100%;min-height:112px;resize:vertical}
+.wrap{max-width:880px;margin:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(92px + env(safe-area-inset-bottom,0px))}
+h1{font-size:24px;margin:0 0 7px}
+h2{font-size:20px;margin:22px 0 10px}
+h3{font-size:16px;margin:0 0 9px}
 .sub,.muted{font-size:13px;line-height:1.65;color:var(--m)}
-.hero,.panel,.phrase-card,.testbox{background:var(--p);border:1px solid var(--l);border-radius:20px;padding:15px;margin-top:13px}
+.hero,.panel,.phrase-card,.testbox,.empty{background:var(--p);border:1px solid var(--l);border-radius:20px;padding:15px;margin-top:13px}
 .hero{padding:18px}
-.switcher{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.switcher a{text-decoration:none;color:var(--t);background:var(--chip);border-radius:999px;padding:7px 10px;font-size:12px}
+.version{font-size:12px;color:var(--m);font-weight:500}
+.switcher{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.switcher a{text-decoration:none;color:var(--t);background:var(--chip);border-radius:999px;padding:8px 11px;font-size:12px}
 .switcher a.current{background:var(--ac);color:#fff}
 .nav{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:13px;position:sticky;top:8px;z-index:20;background:var(--bg);padding:7px;border-radius:16px}
-.nav button{display:block;text-align:center;color:var(--t);background:var(--p);border:1px solid var(--l);border-radius:13px;padding:10px 5px;font-weight:700;font-size:13px}
+.nav button{text-align:center;font-weight:800;font-size:13px;padding:10px 5px}
 .nav button.active{background:var(--ac);color:#fff;border-color:transparent}
-.view{display:none}
-.view.active{display:block}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.view{display:none}.view.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .stat{text-align:center;background:var(--bg);padding:12px 5px;border-radius:13px}
 .stat b{display:block;font-size:21px}.stat span{font-size:11px;color:var(--m)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.primary{background:var(--ac);color:#fff;border-color:transparent;font-weight:800}
+.secondary{font-weight:700}
 .row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--l)}
 .row:last-child{border:0}
-.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-.primary{background:var(--ac);color:#fff;border-color:transparent;font-weight:800}.secondary{font-weight:700}
-.phrase{font-family:"Times New Roman",serif;font-size:25px;line-height:1.4;margin-bottom:8px}
+.filterline{display:grid;grid-template-columns:1.5fr 1fr;gap:8px}
+.filterchips{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.chipbtn{padding:7px 10px;border-radius:999px;font-size:12px}
+.chipbtn.active{background:var(--ac);color:white;border-color:transparent}
+.browse-status{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:10px;font-size:12px;color:var(--m)}
+.phrase-card{padding:14px}
+.phrase{font-family:"Times New Roman",serif;font-size:25px;line-height:1.4;margin-bottom:7px}
 .function{font-size:15px;line-height:1.65}
 .meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
 .badge{font-size:11px;background:var(--chip);padding:5px 8px;border-radius:999px}
-.meters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
-.meter{background:var(--bg);padding:10px;border-radius:12px;font-size:13px}
-.bar{height:7px;background:var(--l);border-radius:99px;overflow:hidden;margin-top:7px}
-.bar>div{height:100%;background:var(--ac)}
-.detail{border-top:1px solid var(--l);padding-top:12px;margin-top:12px;line-height:1.65}
-.filterline{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.badge.ready{background:var(--ok)}.badge.missing{background:var(--mid)}
+.carddetails{border-top:1px solid var(--l);margin-top:12px;padding-top:10px}
+.carddetails summary{font-weight:800;list-style:none;padding:3px 0}
+.carddetails summary::-webkit-details-marker{display:none}
+.detailbody{font-size:13px;line-height:1.75;margin-top:9px}
+.ru{font-family:"Times New Roman",serif}
+.pager{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-top:12px}
+.pager span{font-size:12px;color:var(--m);text-align:center}
 .testlabel{text-align:center;color:var(--m);font-size:12px;margin-bottom:12px}
-.prompt{text-align:center;font-size:22px;line-height:1.55}
-.answerbox{margin-top:14px;background:var(--chip);border-radius:13px;padding:13px;line-height:1.65}
+.prompt{text-align:center;font-size:21px;line-height:1.6}
+.answerbox{margin-top:14px;background:var(--chip);border-radius:13px;padding:13px;line-height:1.7}
 .result{margin-top:14px;padding:14px;border-radius:14px;line-height:1.7}
-.result.ok{background:var(--ok)} .result.mid{background:var(--mid)} .result.bad{background:var(--bad)}
-.scorebig{font-size:34px;font-weight:800}
-.grades{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.result.ok{background:var(--ok)}.result.mid{background:var(--mid)}.result.bad{background:var(--bad)}
+.scorebig{font-size:31px;font-weight:900}
 .notice{margin-top:10px;padding:11px 12px;border-radius:13px;background:var(--mid);font-size:13px;line-height:1.55}
+.grades{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.hidden{display:none!important}
 .filebtn{text-align:center;display:block}
 input[type=file]{display:none}
-.toplink{display:block;text-align:right;margin-top:8px;font-size:12px;color:var(--m);text-decoration:none}
-.hidden{display:none!important}
+.hub-fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:50;background:var(--p);color:var(--t);border:1px solid var(--l);border-radius:999px;padding:10px 14px;text-decoration:none;font-weight:800;font-size:13px}
 code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
 @media(max-width:620px){
   .grid{grid-template-columns:repeat(2,1fr)}
-  .actions,.filterline,.meters,.grades{grid-template-columns:1fr}
-  .phrase{font-size:23px}.prompt{font-size:20px}
+  .actions,.filterline,.grades{grid-template-columns:1fr}
+  .phrase{font-size:23px}.prompt{font-size:19px}
 }
-
-.hub-home-link{
-  position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));
-  z-index:9999;text-decoration:none;background:var(--p);color:var(--t);
-  border:1px solid var(--l);border-radius:999px;padding:10px 13px;
-  font-weight:800;font-size:13px;box-shadow:0 4px 18px rgba(0,0,0,.12)
-}
-.hub-home-link:active{transform:scale(.98)}
-
 </style>
 </head>
 <body>
-<a class="hub-home-link" href="https://domoyo399-byte.github.io/trki-c1-hub/" aria-label="返回 C1 学习中心">⌂ 学习中心</a>
-
-<div class="wrap" id="top">
+<div class="wrap">
   <div class="hero">
-    <h1>ТРКИ-C1 输出语料库</h1>
-    <div class="sub">把阅读、听力和范文里的高价值表达，整理成真正能在写作和口语里调用的语料。</div>
+    <h1>ТРКИ-C1 输出语料库 <span class="version">v2.3</span></h1>
+    <div class="sub">把阅读、听力和写作材料里的高价值表达，变成真正能在写作和口语里调出来的东西。</div>
     <div class="switcher">
-      <a href="./index.html">📚 单词系统</a>
-      <a href="./c1_phrases.html" class="current">💬 输出语料</a>
+      <a href="https://domoyo399-byte.github.io/trki-c1-flashcards/">📚 单词系统</a>
+      <a class="current" href="https://domoyo399-byte.github.io/trki-c1-phrases/">💬 输出语料</a>
     </div>
   </div>
 
@@ -105,188 +103,323 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
     <div class="panel">
       <div class="grid">
         <div class="stat"><b id="totalN">0</b><span>总语料</span></div>
+        <div class="stat"><b id="translateReadyN">0</b><span>可句子翻译</span></div>
         <div class="stat"><b id="dueN">0</b><span>今日到期</span></div>
         <div class="stat"><b id="stableN">0</b><span>写作稳定</span></div>
-        <div class="stat"><b id="writingAvg">—</b><span>✍️ 最近写作正确率</span></div>
-        <div class="stat"><b id="criticalN">0</b><span>近期关键错误</span></div>
-        <div class="stat"><b id="speakingStableN">0</b><span>🎙️ 口语稳定</span></div>
       </div>
     </div>
-
     <div class="panel">
-      <h3>稳定掌握判定</h3>
-      <div class="row"><span>最近 5 次写作平均正确率</span><b>≥ 90%</b></div>
-      <div class="row"><span>最近 3 次写作</span><b>无关键结构错误</b></div>
-      <div class="muted" style="margin-top:8px">单次不要求永远 100%。小拼写失误会扣少量分；关键骨架或关键词出错会明显降分并单独记录。</div>
+      <h3>最快入口</h3>
+      <div class="actions">
+        <button class="primary" onclick="start('translation')">✍️ 句子翻译调用</button>
+        <button onclick="showView('browse')">📖 浏览 / 学习全部语料</button>
+      </div>
+      <div class="muted" id="coverageText" style="margin-top:9px"></div>
     </div>
   </section>
 
   <section id="browse" class="view">
-    <h2>语料浏览</h2>
+    <h2>语料浏览 / 学习</h2>
     <div class="panel">
       <div class="filterline">
-        <input id="searchInput" placeholder="搜索俄语 / 中文功能 / 标签">
+        <input id="searchInput" placeholder="搜索俄语 / 中文功能 / 标签 / 来源">
         <select id="tagFilter"><option value="">全部标签</option></select>
+      </div>
+      <div class="filterchips">
+        <button class="chipbtn active" data-type="">全部</button>
+        <button class="chipbtn" data-type="类型:框架">框架</button>
+        <button class="chipbtn" data-type="类型:展开模块">展开模块</button>
+        <button class="chipbtn" data-type="类型:整句模型">整句模型</button>
+        <button class="chipbtn" data-type="写作">写作</button>
+        <button class="chipbtn" data-type="口语">口语</button>
+      </div>
+      <div class="browse-status">
+        <span id="browseCount">显示 0 / 0</span>
+        <span>每页 20 条，卡片详情按需展开</span>
       </div>
     </div>
     <div id="browseList"></div>
-    <button class="secondary backhome" data-back="overview" style="width:100%;margin-top:14px">← 返回总览</button>
+    <div class="pager">
+      <button id="prevPage">← 上一页</button>
+      <span id="pageInfo">1 / 1</span>
+      <button id="nextPage">下一页 →</button>
+    </div>
   </section>
 
   <section id="review" class="view">
     <h2>今日复习</h2>
-
-      <div class="panel hidden" id="resumePanel">
-        <h3>未完成训练</h3>
-        <div class="muted" id="resumeText"></div>
-        <div class="actions">
-          <button class="primary" id="resumeSession">继续上次训练</button>
-          <button id="discardSession">放弃这轮</button>
-        </div>
-      </div>
     <div class="panel">
+      <button class="primary" id="startTranslation" style="width:100%">✍️ 句子翻译调用（推荐）</button>
       <div class="actions">
-        <button class="primary" id="startWriting">✍️ 开始写作调用</button>
-        <button id="startSpeaking">🎙️ 开始口语调用</button>
+        <button id="startFunction">🧩 功能 → 语料</button>
+        <button id="startSpeaking">🎙️ 口语调用</button>
       </div>
-      <div class="muted" style="margin-top:8px">写作：自动计算正确率 + 关键错误。口语：直接开口后自评；复杂的自然度和语法判断仍留给对话训练。</div>
+      <div class="muted" style="margin-top:9px">
+        句子翻译会先给一条中文句子，你把它说/写成俄语；目标不是逐字翻译，而是把这条语料真正调出来。旧语料若暂时没有翻译题，仍可用“功能 → 语料”复习。
+      </div>
     </div>
+
+    <div class="panel hidden" id="resumePanel">
+      <h3>未完成训练</h3>
+      <div class="muted" id="resumeText"></div>
+      <div class="actions">
+        <button class="primary" id="resumeSession">继续上次训练</button>
+        <button id="discardSession">放弃这轮</button>
+      </div>
+    </div>
+
     <div id="testArea" class="testbox"><div class="muted" style="text-align:center">选择一种模式开始。</div></div>
-    <button class="secondary backhome" data-back="overview" style="width:100%;margin-top:14px">← 返回总览</button>
   </section>
 
   <section id="data" class="view">
     <h2>数据管理</h2>
     <div class="panel">
       <div class="actions">
-        <label class="filebtn" for="importPhrase">导入语料包 JSON</label><input id="importPhrase" type="file" accept=".json">
-        <button id="exportBackup">导出语料库完整备份</button>
-        <label class="filebtn" for="importBackup">恢复语料库完整备份</label><input id="importBackup" type="file" accept=".json">
+        <label class="filebtn" for="importPhrase">导入语料包 / 每日同步包</label><input id="importPhrase" type="file" accept=".json">
+        <button id="exportBackup">导出完整备份</button>
+        <label class="filebtn" for="importBackup">恢复完整备份</label><input id="importBackup" type="file" accept=".json">
         <button id="exportContent">仅导出语料内容</button>
       </div>
-      <div class="muted" style="margin-top:10px">
-        推荐新增文件名：<code>TRKI_C1_phrase_pack_YYYY-MM-DD.json</code><br>
-        完整备份名：<code>TRKI_C1_phrase_backup_YYYY-MM-DD.json</code><br>
-        这套数据与单词网站的 <code>TRKI_C1_vocab_...</code> / <code>TRKI_C1_backup_...</code> 分开。
-      </div>
+      <div class="muted" style="margin-top:10px">localStorage key 保持不变：<code>trki_c1_phrase_db_v1</code>。替换网页不会清空你原来的语料和复习记录。</div>
     </div>
     <div class="panel">
-      <h3>评分说明</h3>
-      <div class="muted">
-        自动评分只适合“语料框架 / 关键词”的回忆测试。它不会假装判断任意自由表达是否自然。若答案与参考框架差异很大，但你认为是合法替代表达，建议拿到对话里复核。
-      </div>
+      <h3>句子翻译覆盖</h3>
+      <div class="row"><span>已有翻译题</span><b id="dataReadyN">0</b></div>
+      <div class="row"><span>仍待补充</span><b id="dataMissingN">0</b></div>
+      <div class="muted" style="margin-top:8px">v2.3 会自动补上本轮已知的部分旧语料。今后的同步包则直接写入 <code>translationPrompts</code>，不再靠网页猜。</div>
     </div>
-    <div class="notice">
-      注意：GitHub Pages 本身不会自动同步不同设备上的学习进度。新增语料可以靠导入语料包；如果要把“学习记录”换到另一台设备，请导出/恢复“语料库完整备份”。
-    </div>
-    <button class="secondary backhome" data-back="overview" style="width:100%;margin-top:14px">← 返回总览</button>
+    <div class="notice" id="dbNotice"></div>
   </section>
 </div>
 
+<a class="hub-fab" href="https://domoyo399-byte.github.io/trki-c1-hub/">⌂ 学习中心</a>
+
 <script>
 const STORAGE_KEY="trki_c1_phrase_db_v1";
+const LEGACY_KEYS=["trki_c1_phrases_v03"];
 const SESSION_KEY="trki_c1_phrase_session_v1";
 const DAY=86400000;
-
-const DEMO=[];
+const PAGE_SIZE=20;
+const BUILTIN_TRANSLATIONS={"not_stolko_skolko": [{"zh": "与其说问题在于缺少时间，不如说在于不会合理分配时间。", "ru": "Речь идёт не столько о нехватке времени, сколько о неспособности правильно его распределять."}], "nelzya_ne_uchityvat": [{"zh": "不能不考虑这样一个事实：生活条件已经发生了明显变化。", "ru": "Нельзя не учитывать тот факт, что условия жизни заметно изменились."}], "ya_by_ne_stala": [{"zh": "我不会这么快下如此绝对的结论。", "ru": "Я бы не стала делать столь однозначный вывод."}], "PH-C1-20261013-01": [{"zh": "在这个问题上，我持有不同意见。", "ru": "По этому вопросу я придерживаюсь другого мнения."}, {"zh": "我认为，这类措施还不够。", "ru": "Я придерживаюсь мнения, что подобные меры недостаточны."}], "PH-C1-20261013-02": [{"zh": "申请人在正式信函中陈述了自己的要求。", "ru": "Заявитель изложил свои требования в официальном письме."}, {"zh": "请以书面形式陈述您的意见。", "ru": "Просим изложить ваши замечания в письменной форме."}], "PH-C1-20261013-03": [{"zh": "青少年尤其容易受到社交网络的影响。", "ru": "Подростки особенно подвержены влиянию социальных сетей."}, {"zh": "某些经济部门容易受到需求剧烈波动的影响。", "ru": "Некоторые отрасли экономики подвержены резким колебаниям спроса."}], "PH-C1-20261013-04": [{"zh": "在下结论之前，应当核实信息的可靠性。", "ru": "Прежде чем делать выводы, следует проверить достоверность информации."}, {"zh": "在寄出信件之前，先检查一下文本。", "ru": "Проверь текст, прежде чем отправить письмо."}], "PH-C1-20261013-05": [{"zh": "形势不断变化：一会儿出现新的困难，一会儿又出现意外的机会。", "ru": "Обстановка постоянно менялась: то возникали новые трудности, то появлялись неожиданные возможности."}, {"zh": "他一会儿同意这个建议，一会儿又再次表示怀疑。", "ru": "Он то соглашался с предложением, то вновь высказывал сомнения."}], "PH-C1-20261013-06": [{"zh": "本课程面向已经具有实践经验的专业人士。", "ru": "Данный курс рассчитан на специалистов, уже имеющих практический опыт."}, {"zh": "这个项目面向有较高语言水平的学习者。", "ru": "Данный проект рассчитан на учащихся с высоким уровнем языковой подготовки."}], "PH-C1-20261013-07": [{"zh": "这项倡议值得积极评价。", "ru": "Подобная инициатива заслуживает положительной оценки."}, {"zh": "这些研究结果值得特别关注。", "ru": "Результаты исследования заслуживают особого внимания."}]};
 
 function clone(x){return JSON.parse(JSON.stringify(x))}
-function stripMarks(s){return (s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
-function norm(s){
-  return stripMarks(s).toLowerCase().replace(/ё/g,"е")
-    .replace(/[.…,!?;:()[\]{}"«»—–-]/g," ")
-    .replace(/\s+/g," ").trim();
+function stripMarks(s){return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
+function norm(s){return stripMarks(s).toLowerCase().replace(/ё/g,"е").replace(/[.…,!?;:()[\]{}"«»—–-]/g," ").replace(/\s+/g," ").trim()}
+function esc(s=""){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
+function safeArray(x){return Array.isArray(x)?x:[]}
+function safeTags(p){return safeArray(p.tags).map(String)}
+function phraseId(p){return p.id||norm(p.phrase).replace(/\s+/g,"_").slice(0,90)}
+
+function normalizeTranslationPrompts(p){
+  const out=[];
+  safeArray(p.translationPrompts).forEach(x=>{
+    if(typeof x==="object"&&x){
+      const zh=x.zh||x.promptZh||x.cn;
+      const ru=x.ru||x.targetRu||x.target;
+      if(zh&&ru)out.push({zh:String(zh),ru:String(ru)})
+    }
+  });
+  if(!out.length && p.sourceExampleZh && p.sourceExample)out.push({zh:String(p.sourceExampleZh),ru:String(p.sourceExample)});
+  const built=BUILTIN_TRANSLATIONS[p.id]||[];
+  if(!out.length&&built.length)out.push(...clone(built));
+  return out
 }
+function normalizePhrase(p){
+  const x={...p};
+  x.id=phraseId(x);
+  x.phrase=String(x.phrase||"");
+  x.functionZh=String(x.functionZh||"");
+  x.pattern=String(x.pattern||"");
+  x.sourceExample=String(x.sourceExample||"");
+  x.source=String(x.source||"");
+  x.tags=safeTags(x);
+  x.transferExamples=safeArray(x.transferExamples).map(String);
+  x.translationPrompts=normalizeTranslationPrompts(x);
+  x.evaluator=(x.evaluator&&typeof x.evaluator==="object")?x.evaluator:{};
+  x.evaluator.critical=safeArray(x.evaluator.critical).map(String);
+  x.evaluator.key=safeArray(x.evaluator.key).map(String);
+  x.writingHistory=safeArray(x.writingHistory);
+  x.speakingHistory=safeArray(x.speakingHistory);
+  return x
+}
+function mergePhrase(oldp,newp){
+  const out=normalizePhrase({...oldp,...newp});
+  const keep=["writingHistory","speakingHistory","nextWritingDue","nextSpeakingDue"];
+  if(oldp)keep.forEach(k=>{if(oldp[k]!==undefined)out[k]=oldp[k]});
+  const fresh=normalizeTranslationPrompts(newp||{});
+  if(fresh.length)out.translationPrompts=fresh;
+  else if(oldp&&safeArray(oldp.translationPrompts).length)out.translationPrompts=normalizeTranslationPrompts(oldp);
+  return out
+}
+
+function readKey(key){
+  try{const x=JSON.parse(localStorage.getItem(key)||"null");return x&&Array.isArray(x.phrases)?x:null}catch(e){return null}
+}
+function load(){
+  let current=readKey(STORAGE_KEY);
+  if(!current)current={format:"TRKI-C1-PHRASE-DB",version:2.3,phrases:[]};
+  current.phrases=safeArray(current.phrases).map(normalizePhrase);
+  if(!current.phrases.length){
+    for(const key of LEGACY_KEYS){
+      const legacy=readKey(key);
+      if(legacy&&legacy.phrases.length){
+        const map=new Map();
+        legacy.phrases.map(normalizePhrase).forEach(p=>map.set(p.id,p));
+        current.phrases=[...map.values()];
+        current.migratedFrom=key;
+        break
+      }
+    }
+  }
+  current.version=2.3;
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(current));
+  return current
+}
+let db=load();
+let browsePage=1,browseType="";
+let session={mode:null,deck:[],i:0,pending:null};
+
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(db))}
+function recent(p,field,n){return safeArray(p[field]).slice(-n)}
+function writingAvgOf(p){
+  const h=recent(p,"writingHistory",5).filter(x=>Number.isFinite(Number(x.score)));
+  return h.length?Math.round(h.reduce((s,x)=>s+Number(x.score),0)/h.length):null
+}
+function stableWriting(p){
+  const last5=recent(p,"writingHistory",5),last3=recent(p,"writingHistory",3);
+  return last5.length>=5 &&
+    last5.every(x=>Number.isFinite(Number(x.score))) &&
+    last5.reduce((s,x)=>s+Number(x.score),0)/5>=90 &&
+    last3.length>=3 && last3.every(x=>(x.criticalErrors||0)===0)
+}
+function due(p){const w=p.nextWritingDue||0,s=p.nextSpeakingDue||0;return (w&&w<=Date.now())||(s&&s<=Date.now())||(!w&&!s)}
+function translationReady(p){return normalizeTranslationPrompts(p).length>0}
+
+function renderOverview(){
+  const total=db.phrases.length,ready=db.phrases.filter(translationReady).length;
+  document.getElementById("totalN").textContent=total;
+  document.getElementById("translateReadyN").textContent=ready;
+  document.getElementById("dueN").textContent=db.phrases.filter(due).length;
+  document.getElementById("stableN").textContent=db.phrases.filter(stableWriting).length;
+  document.getElementById("coverageText").textContent=total
+    ? `当前 ${ready} / ${total} 条语料可以直接做“中文句子 → 俄语”调用；其余旧语料仍可浏览，也可以用功能提示复习。`
+    : "当前数据库是空的。导入每日同步包或恢复语料备份后，这里会自动出现。";
+  document.getElementById("dataReadyN").textContent=ready;
+  document.getElementById("dataMissingN").textContent=Math.max(0,total-ready);
+  document.getElementById("dbNotice").textContent=total
+    ? "✅ 语料数据库已读取。浏览页会明确显示匹配数量，不会再出现一片空白却不告诉你发生了什么。"
+    : "⚠️ 当前 trki_c1_phrase_db_v1 里没有语料。如果你以前的语料在旧版 trki_c1_phrases_v03，v2.3 会自动迁移；若仍为 0，请从学习中心重新导入同步包或恢复完整备份。";
+}
+
+function setupTags(){
+  const tags=[...new Set(db.phrases.flatMap(p=>safeTags(p)))].sort((a,b)=>a.localeCompare(b,"zh-CN"));
+  document.getElementById("tagFilter").innerHTML='<option value="">全部标签</option>'+tags.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("");
+}
+function filteredPhrases(){
+  const q=norm(document.getElementById("searchInput").value||"");
+  const tag=document.getElementById("tagFilter").value;
+  return db.phrases.filter(p=>{
+    const tags=safeTags(p);
+    const hay=norm([p.phrase,p.functionZh,p.pattern,p.source,...tags,...p.transferExamples].join(" "));
+    return (!q||hay.includes(q))&&(!tag||tags.includes(tag))&&(!browseType||tags.includes(browseType))
+  })
+}
+function phraseCard(p){
+  try{
+    const prompts=normalizeTranslationPrompts(p);
+    const avg=writingAvgOf(p);
+    return `<div class="phrase-card">
+      <div class="phrase">${esc(p.phrase)}</div>
+      <div class="function">${esc(p.functionZh||"（未填写中文功能）")}</div>
+      <div class="meta">
+        ${safeTags(p).map(t=>`<span class="badge">${esc(t)}</span>`).join("")}
+        ${prompts.length?`<span class="badge ready">句子翻译 ×${prompts.length}</span>`:`<span class="badge missing">待补翻译题</span>`}
+      </div>
+      <details class="carddetails">
+        <summary>展开学习详情</summary>
+        <div class="detailbody">
+          ${p.pattern?`<b>结构 / 替换槽：</b>${esc(p.pattern)}<br>`:""}
+          ${p.sourceExample?`<b>来源例句：</b><span class="ru">${esc(p.sourceExample)}</span><br>`:""}
+          ${p.transferExamples.length?`<b>迁移例句：</b><br>${p.transferExamples.map(x=>`• <span class="ru">${esc(x)}</span>`).join("<br>")}<br>`:""}
+          ${prompts.length?`<b>句子翻译题：</b><br>${prompts.map(x=>`• ${esc(x.zh)}<br><span class="ru">→ ${esc(x.ru)}</span>`).join("<br>")}<br>`:""}
+          ${p.source?`<span class="muted">来源：${esc(p.source)}</span><br>`:""}
+          <b>关键骨架：</b>${safeArray(p.evaluator?.critical).map(esc).join(" ｜ ")||"未标注"}
+          ${avg!==null?`<br><span class="muted">最近写作调用平均：${avg}%</span>`:""}
+        </div>
+      </details>
+    </div>`
+  }catch(err){
+    return `<div class="empty">⚠️ 这条语料数据格式有问题，ID：${esc(p&&p.id||"未知")}。其余语料仍会继续显示。</div>`
+  }
+}
+function renderBrowse(){
+  const ps=filteredPhrases();
+  const pages=Math.max(1,Math.ceil(ps.length/PAGE_SIZE));
+  browsePage=Math.max(1,Math.min(browsePage,pages));
+  const chunk=ps.slice((browsePage-1)*PAGE_SIZE,browsePage*PAGE_SIZE);
+  document.getElementById("browseCount").textContent=`显示 ${ps.length} / 总 ${db.phrases.length}`;
+  document.getElementById("pageInfo").textContent=`${browsePage} / ${pages}`;
+  document.getElementById("prevPage").disabled=browsePage<=1;
+  document.getElementById("nextPage").disabled=browsePage>=pages;
+  const list=document.getElementById("browseList");
+  if(!db.phrases.length){
+    list.innerHTML='<div class="empty"><b>当前语料库是空的。</b><div class="muted" style="margin-top:7px">这不是“筛选不到”，而是真的没有读到语料。请到数据管理导入每日同步包 / 语料备份，或者从学习中心重新同步。</div></div>';
+    return
+  }
+  if(!ps.length){
+    list.innerHTML='<div class="empty"><b>没有匹配当前筛选条件的语料。</b><div class="muted" style="margin-top:7px">换一个标签，或者清空搜索词即可。</div></div>';
+    return
+  }
+  list.innerHTML=chunk.map(phraseCard).join("");
+}
+document.getElementById("searchInput").addEventListener("input",()=>{browsePage=1;renderBrowse()});
+document.getElementById("tagFilter").addEventListener("change",()=>{browsePage=1;renderBrowse()});
+document.querySelectorAll(".chipbtn").forEach(b=>b.addEventListener("click",()=>{
+  browseType=b.dataset.type||"";
+  document.querySelectorAll(".chipbtn").forEach(x=>x.classList.toggle("active",x===b));
+  browsePage=1;renderBrowse()
+}));
+document.getElementById("prevPage").onclick=()=>{browsePage--;renderBrowse();window.scrollTo(0,0)};
+document.getElementById("nextPage").onclick=()=>{browsePage++;renderBrowse();window.scrollTo(0,0)};
+
 function lev(a,b){
   const m=a.length,n=b.length;if(!m)return n;if(!n)return m;
   let prev=Array.from({length:n+1},(_,i)=>i),cur=new Array(n+1);
   for(let i=1;i<=m;i++){
     cur[0]=i;
     for(let j=1;j<=n;j++)cur[j]=Math.min(cur[j-1]+1,prev[j]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));
-    [prev,cur]=[cur,prev];
+    [prev,cur]=[cur,prev]
   }
-  return prev[n];
+  return prev[n]
 }
 function similarity(a,b){a=norm(a);b=norm(b);const L=Math.max(a.length,b.length);return L?1-lev(a,b)/L:1}
 function includesPhrase(ans,p){return norm(ans).includes(norm(p))}
-function load(){
-  try{const x=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");if(x&&Array.isArray(x.phrases))return x}catch(e){}
-  const x={format:"TRKI-C1-PHRASE-DB",version:1,phrases:clone(DEMO)};
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(x));return x;
-}
-let db=load(),session={mode:null,deck:[],i:0,pending:null};
-function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(db))}
-function recent(p,field,n){return (p[field]||[]).slice(-n)}
-function writingAvgOf(p){const h=recent(p,"writingHistory",5);return h.length?Math.round(h.reduce((s,x)=>s+x.score,0)/h.length):null}
-function stableWriting(p){
-  const last5=recent(p,"writingHistory",5),last3=recent(p,"writingHistory",3);
-  return last5.length>=5&&last5.reduce((s,x)=>s+x.score,0)/5>=90&&last3.length>=3&&last3.every(x=>x.criticalErrors===0)
-}
-function stableSpeaking(p){const h=recent(p,"speakingHistory",3);return h.length>=3&&h.every(x=>x.grade===2)}
-function due(p){const w=p.nextWritingDue||0,s=p.nextSpeakingDue||0;return (w&&w<=Date.now())||(s&&s<=Date.now())||(!w&&!s)}
-function allWritingHistory(){return db.phrases.flatMap(p=>p.writingHistory||[]).sort((a,b)=>a.time-b.time)}
-function esc(s=""){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
-function renderOverview(){
-  document.getElementById("totalN").textContent=db.phrases.length;
-  document.getElementById("dueN").textContent=db.phrases.filter(due).length;
-  document.getElementById("stableN").textContent=db.phrases.filter(stableWriting).length;
-  document.getElementById("speakingStableN").textContent=db.phrases.filter(stableSpeaking).length;
-  const wh=allWritingHistory().slice(-20);
-  document.getElementById("writingAvg").textContent=wh.length?Math.round(wh.reduce((s,x)=>s+x.score,0)/wh.length)+"%":"—";
-  document.getElementById("criticalN").textContent=wh.slice(-10).reduce((s,x)=>s+(x.criticalErrors||0),0);
-}
-function setupTags(){
-  const tags=[...new Set(db.phrases.flatMap(p=>p.tags||[]))].sort();
-  document.getElementById("tagFilter").innerHTML='<option value="">全部标签</option>'+tags.map(t=>`<option>${esc(t)}</option>`).join("");
-}
-function phraseCard(p){
-  const avg=writingAvgOf(p);
-  return `<div class="phrase-card">
-    <div class="phrase">${esc(p.phrase)}</div>
-    <div class="function">${esc(p.functionZh)}</div>
-    <div class="meta">${(p.tags||[]).map(t=>`<span class="badge">${esc(t)}</span>`).join("")}</div>
-    <div class="meters">
-      <div class="meter">✍️ 最近5次：${avg===null?"暂无":avg+"%"}<div class="bar"><div style="width:${avg||0}%"></div></div></div>
-      <div class="meter">状态：${stableWriting(p)?"写作稳定":"继续复习"} / ${stableSpeaking(p)?"口语稳定":"口语待练"}</div>
-    </div>
-    <div class="detail">
-      ${p.pattern?`<b>结构：</b>${esc(p.pattern)}<br>`:""}
-      ${p.sourceExample?`<b>来源例句：</b><span style="font-family:'Times New Roman',serif">${esc(p.sourceExample)}</span><br>`:""}
-      ${(p.transferExamples||[]).length?`<b>迁移例句：</b><br>${p.transferExamples.map(x=>`• <span style="font-family:'Times New Roman',serif">${esc(x)}</span>`).join("<br>")}<br>`:""}
-      ${p.source?`<span class="muted">来源：${esc(p.source)}</span><br>`:""}
-      <b>关键骨架：</b>${(p.evaluator?.critical||[]).map(esc).join(" ｜ ")||"未标注"}
-    </div>
-  </div>`;
-}
-function renderBrowse(){
-  const q=norm(document.getElementById("searchInput").value||""),tag=document.getElementById("tagFilter").value;
-  const ps=db.phrases.filter(p=>{
-    const hay=norm([p.phrase,p.functionZh,p.pattern,p.source,...(p.tags||[])].join(" "));
-    return (!q||hay.includes(q))&&(!tag||(p.tags||[]).includes(tag))
-  });
-  document.getElementById("browseList").innerHTML=ps.map(phraseCard).join("")||'<div class="muted" style="padding:24px;text-align:center">没有匹配的语料。</div>';
-}
-document.getElementById("searchInput").oninput=renderBrowse;
-document.getElementById("tagFilter").onchange=renderBrowse;
-
-function scoreWriting(p,answer){
-  const critical=p.evaluator?.critical||[],key=p.evaluator?.key||[];
+function scoreWriting(p,answer,target){
+  const critical=safeArray(p.evaluator?.critical),key=safeArray(p.evaluator?.key);
   const criticalMiss=critical.filter(x=>!includesPhrase(answer,x));
   const keyMiss=key.filter(x=>!includesPhrase(answer,x));
   const criticalRatio=critical.length?(critical.length-criticalMiss.length)/critical.length:1;
   const keyRatio=key.length?(key.length-keyMiss.length)/key.length:1;
-  const sim=similarity(answer,p.phrase);
-  let score=Math.round(criticalRatio*55+keyRatio*15+sim*30);
+  const sim=similarity(answer,target||p.phrase);
+  let score=Math.round(criticalRatio*50+keyRatio*10+sim*40);
   if(criticalMiss.length)score=Math.min(score,74);
   if(!criticalMiss.length&&score<80)score=80;
   return {score:Math.max(0,Math.min(100,score)),criticalErrors:criticalMiss.length,keyErrors:keyMiss.length,criticalMiss,keyMiss,similarity:Math.round(sim*100)}
 }
 function intervalFromScore(score,criticalErrors){if(criticalErrors>0)return 1;if(score>=95)return 7;if(score>=90)return 4;if(score>=80)return 2;return 1}
 
-function savedPhraseSession(){
+function translationTask(p){
+  const arr=normalizeTranslationPrompts(p);
+  if(!arr.length)return null;
+  const hist=safeArray(p.writingHistory).filter(x=>x.mode==="translation");
+  return arr[hist.length%arr.length]
+}
+function modeName(mode){return mode==="translation"?"句子翻译":mode==="function"?"功能 → 语料":"口语调用"}
+function savedSession(){
   try{
     const s=JSON.parse(localStorage.getItem(SESSION_KEY)||"null");
     if(!s||!Array.isArray(s.ids)||!s.mode)return null;
+    if(s.mode==="writing")s.mode="function";
     const valid=new Set(db.phrases.map(x=>x.id));
     s.ids=s.ids.filter(id=>valid.has(id));
     s.i=Math.max(0,Math.min(Number(s.i)||0,s.ids.length));
@@ -294,60 +427,71 @@ function savedPhraseSession(){
     return s
   }catch(e){return null}
 }
-function renderResume(){
-  const el=document.getElementById("resumePanel");if(!el)return;
-  const s=savedPhraseSession();
-  if(!s){el.classList.add("hidden");return}
-  document.getElementById("resumeText").textContent=`${s.mode==="writing"?"写作调用":"口语调用"} · ${s.i+1}/${s.ids.length} · 已自动保存`;
-  el.classList.remove("hidden")
-}
-function persistPhraseSession(){
+function persistSession(){
   if(!session.deck.length||session.i>=session.deck.length){localStorage.removeItem(SESSION_KEY);renderResume();return}
-  localStorage.setItem(SESSION_KEY,JSON.stringify({
-    format:"TRKI-C1-PHRASE-SESSION",version:1,mode:session.mode,
-    ids:session.deck.map(x=>x.id),i:session.i,savedAt:Date.now()
-  }));
+  localStorage.setItem(SESSION_KEY,JSON.stringify({format:"TRKI-C1-PHRASE-SESSION",version:2,mode:session.mode,ids:session.deck.map(x=>x.id),i:session.i,savedAt:Date.now()}));
   renderResume()
 }
-function clearPhraseSession(){localStorage.removeItem(SESSION_KEY);renderResume()}
-function resumePhraseSession(){
-  const s=savedPhraseSession();if(!s){alert("没有可继续的训练。");renderResume();return}
-  const map=new Map(db.phrases.map(x=>[x.id,x]));
+function clearSession(){localStorage.removeItem(SESSION_KEY);renderResume()}
+function renderResume(){
+  const el=document.getElementById("resumePanel"),s=savedSession();
+  if(!s){el.classList.add("hidden");return}
+  document.getElementById("resumeText").textContent=`${modeName(s.mode)} · ${s.i+1}/${s.ids.length} · 已自动保存`;
+  el.classList.remove("hidden")
+}
+function resumeSession(){
+  const s=savedSession();if(!s){alert("没有可继续的训练。");return}
+  const map=new Map(db.phrases.map(p=>[p.id,p]));
   session={mode:s.mode,deck:s.ids.map(id=>map.get(id)).filter(Boolean),i:s.i,pending:null};
   showView("review");renderTest()
 }
 
 function start(mode){
-  session.mode=mode;
-  const field=mode==="writing"?"nextWritingDue":"nextSpeakingDue";
-  let deck=[...db.phrases].sort((a,b)=>{
-    const ad=(a[field]||0)<=Date.now()?0:1,bd=(b[field]||0)<=Date.now()?0:1;
-    const av=mode==="writing"?(writingAvgOf(a)??0):recent(a,"speakingHistory",3).filter(x=>x.grade===2).length*30;
-    const bv=mode==="writing"?(writingAvgOf(b)??0):recent(b,"speakingHistory",3).filter(x=>x.grade===2).length*30;
+  if(!db.phrases.length){alert("当前语料库是空的，先导入语料。");return}
+  let pool=db.phrases.filter(p=>mode!=="translation"||translationReady(p));
+  if(!pool.length){alert("目前还没有可用于句子翻译的语料。旧语料可以先用“功能 → 语料”；以后同步包会自动带 translationPrompts。");return}
+  const dueField=mode==="speaking"?"nextSpeakingDue":"nextWritingDue";
+  pool=[...pool].sort((a,b)=>{
+    const ad=(a[dueField]||0)<=Date.now()?0:1,bd=(b[dueField]||0)<=Date.now()?0:1;
+    const av=mode==="speaking"?recent(a,"speakingHistory",3).filter(x=>x.grade===2).length*30:(writingAvgOf(a)??0);
+    const bv=mode==="speaking"?recent(b,"speakingHistory",3).filter(x=>x.grade===2).length*30:(writingAvgOf(b)??0);
     return ad-bd||av-bv
   });
-  session.deck=deck.slice(0,Math.min(10,deck.length));session.i=0;persistPhraseSession();renderTest();showView("review")
+  session={mode,deck:pool.slice(0,Math.min(10,pool.length)),i:0,pending:null};
+  persistSession();showView("review");renderTest()
 }
 function renderTest(){
   const area=document.getElementById("testArea");
   if(session.i>=session.deck.length){
-    clearPhraseSession();area.innerHTML='<div style="text-align:center"><b>这一轮完成了。</b><div class="muted" style="margin-top:8px">正确率和关键错误记录已经更新。</div></div>';
+    clearSession();
+    area.innerHTML='<div style="text-align:center"><b>这一轮完成了。</b><div class="muted" style="margin-top:8px">复习记录已经更新。</div></div>';
     renderOverview();renderBrowse();return
   }
   const p=session.deck[session.i];
-  if(session.mode==="writing"){
+  if(session.mode==="translation"){
+    const task=translationTask(p);
+    if(!task){session.i++;persistSession();renderTest();return}
     area.innerHTML=`
-      <div class="testlabel">✍️ 写作调用 · ${session.i+1}/${session.deck.length}</div>
-      <div class="prompt">${esc(p.functionZh)}</div>
-      <div class="muted" style="text-align:center;margin-top:7px">请写出对应的俄语语料框架。允许正常标点差异；关键骨架出错会额外扣分。</div>
+      <div class="testlabel">✍️ 句子翻译调用 · ${session.i+1}/${session.deck.length}</div>
+      <div class="prompt">${esc(task.zh)}</div>
+      <div class="muted" style="text-align:center;margin-top:7px">把这句话写成自然的俄语，并尽量调用目标语料。不是逐字翻译题。</div>
       <textarea id="answerInput" placeholder="输入俄语……"></textarea>
-      <button class="primary" style="width:100%;margin-top:10px" onclick="submitWriting()">提交并计算</button>
+      <button class="primary" style="width:100%;margin-top:10px" onclick="submitWriting()">提交并查看目标表达</button>
+      <div id="scoreResult"></div>`;
+  }else if(session.mode==="function"){
+    area.innerHTML=`
+      <div class="testlabel">🧩 功能 → 语料 · ${session.i+1}/${session.deck.length}</div>
+      <div class="prompt">${esc(p.functionZh)}</div>
+      <div class="muted" style="text-align:center;margin-top:7px">这是兼容旧语料的复习方式。写出你想调用的俄语框架。</div>
+      <textarea id="answerInput" placeholder="输入俄语……"></textarea>
+      <button class="primary" style="width:100%;margin-top:10px" onclick="submitWriting()">提交</button>
       <div id="scoreResult"></div>`;
   }else{
+    const task=translationTask(p);
     area.innerHTML=`
       <div class="testlabel">🎙️ 口语调用 · ${session.i+1}/${session.deck.length}</div>
-      <div class="prompt">${esc(p.functionZh)}</div>
-      <div class="notice">先直接说出来，再点“显示参考”。这里不做语音识别。</div>
+      <div class="prompt">${esc(task?task.zh:p.functionZh)}</div>
+      <div class="notice">先直接开口说俄语，再显示参考。网页只记录你的自评，不假装判断发音或自由表达是否自然。</div>
       <button class="primary" style="width:100%;margin-top:10px" onclick="revealSpeaking()">显示参考</button>
       <div id="speakingReveal" class="hidden"></div>`;
   }
@@ -355,130 +499,102 @@ function renderTest(){
 function submitWriting(){
   const p=session.deck[session.i],answer=document.getElementById("answerInput").value.trim();
   if(!answer){alert("先输入答案");return}
-  const r=scoreWriting(p,answer),cls=r.score>=90&&!r.criticalErrors?"ok":r.score>=70?"mid":"bad";
+  const task=session.mode==="translation"?translationTask(p):null;
+  const target=task?task.ru:p.phrase;
+  const r=scoreWriting(p,answer,target),cls=r.score>=90&&!r.criticalErrors?"ok":r.score>=70?"mid":"bad";
   document.getElementById("scoreResult").innerHTML=`
     <div class="result ${cls}">
       <div class="scorebig">${r.score}%</div>
-      ${r.criticalMiss.length?`<div><b>关键错误：</b>${r.criticalMiss.map(esc).join("；")}</div>`:'<div><b>关键骨架：</b>通过</div>'}
-      ${r.keyMiss.length?`<div><b>普通关键词缺失：</b>${r.keyMiss.map(esc).join("；")}</div>`:""}
-      <div><b>参考：</b><span style="font-family:'Times New Roman',serif">${esc(p.phrase)}</span></div>
-      <div class="muted">整体文字相似度：${r.similarity}% · 这里只评“框架回忆”，不是自由作文的自然度。</div>
+      ${r.criticalMiss.length?`<div><b>目标骨架缺失：</b>${r.criticalMiss.map(esc).join("；")}</div>`:'<div><b>目标骨架：</b>已调用</div>'}
+      ${r.keyMiss.length?`<div><b>值得注意：</b>${r.keyMiss.map(esc).join("；")}</div>`:""}
+      <div><b>目标答案：</b><span class="ru">${esc(target)}</span></div>
+      <div><b>核心语料：</b><span class="ru">${esc(p.phrase)}</span></div>
+      <div class="muted">这里主要检查目标语料是否被调出来。若你用了另一种同样自然的俄语，网页不能可靠替你判定，请以对话训练的反馈为准。</div>
     </div>
     <button class="primary" style="width:100%;margin-top:10px" onclick="saveWritingResult()">记录并下一题</button>`;
-  session.pending={p,answer,r}
+  session.pending={p,answer,r,mode:session.mode,target}
 }
 function saveWritingResult(){
-  const {p,answer,r}=session.pending;
-  p.writingHistory=p.writingHistory||[];
-  p.writingHistory.push({time:Date.now(),answer,score:r.score,criticalErrors:r.criticalErrors,keyErrors:r.keyErrors});
-  if(p.writingHistory.length>30)p.writingHistory=p.writingHistory.slice(-30);
+  const {p,answer,r,mode,target}=session.pending;
+  p.writingHistory=safeArray(p.writingHistory);
+  p.writingHistory.push({time:Date.now(),mode,answer,target,score:r.score,criticalErrors:r.criticalErrors,keyErrors:r.keyErrors});
+  if(p.writingHistory.length>40)p.writingHistory=p.writingHistory.slice(-40);
   p.nextWritingDue=Date.now()+intervalFromScore(r.score,r.criticalErrors)*DAY;
-  save();session.pending=null;session.i++;persistPhraseSession();renderTest();renderOverview()
+  save();session.pending=null;session.i++;persistSession();renderTest();renderOverview()
 }
 function revealSpeaking(){
-  const p=session.deck[session.i];
+  const p=session.deck[session.i],task=translationTask(p),target=task?task.ru:p.phrase;
   const el=document.getElementById("speakingReveal");el.classList.remove("hidden");
-  el.innerHTML=`<div class="answerbox"><b>参考语料：</b><br><span class="phrase" style="font-size:22px">${esc(p.phrase)}</span></div>
+  el.innerHTML=`<div class="answerbox"><b>参考：</b><br><span class="phrase" style="font-size:22px">${esc(target)}</span><br><span class="muted">核心语料：${esc(p.phrase)}</span></div>
     <div class="grades"><button onclick="gradeSpeaking(0)">没想起来</button><button onclick="gradeSpeaking(1)">有提示 / 不稳</button><button class="primary" onclick="gradeSpeaking(2)">能主动调用</button></div>`
 }
 function gradeSpeaking(grade){
-  const p=session.deck[session.i];p.speakingHistory=p.speakingHistory||[];
+  const p=session.deck[session.i];p.speakingHistory=safeArray(p.speakingHistory);
   p.speakingHistory.push({time:Date.now(),grade});
-  if(p.speakingHistory.length>30)p.speakingHistory=p.speakingHistory.slice(-30);
+  if(p.speakingHistory.length>40)p.speakingHistory=p.speakingHistory.slice(-40);
   p.nextSpeakingDue=Date.now()+(grade===2?4:grade===1?2:1)*DAY;
-  save();session.i++;persistPhraseSession();renderTest();renderOverview()
+  save();session.i++;persistSession();renderTest();renderOverview()
 }
-function mergePhrase(oldp,newp){
-  const keep=["writingHistory","speakingHistory","nextWritingDue","nextSpeakingDue"];
-  const out={...newp};
-  if(oldp)keep.forEach(k=>{if(oldp[k]!==undefined)out[k]=oldp[k]});
-  out.id=out.id||norm(out.phrase).replace(/\s+/g,"_").slice(0,90);
-  out.writingHistory=out.writingHistory||[];out.speakingHistory=out.speakingHistory||[];
-  out.tags=out.tags||[];out.transferExamples=out.transferExamples||[];
-  out.evaluator=out.evaluator||{critical:[],key:[]};
-  return out
-}
-function readJSON(file,cb){if(!file)return;const r=new FileReader();r.onload=()=>{try{cb(JSON.parse(r.result))}catch(e){alert("JSON 读取失败")}};r.readAsText(file)}
+
+function readJSON(file,cb){if(!file)return;const r=new FileReader();r.onload=()=>{try{cb(JSON.parse(r.result))}catch(e){alert("JSON 读取失败："+e.message)}};r.readAsText(file)}
 function download(name,text){const a=document.createElement("a"),u=URL.createObjectURL(new Blob([text],{type:"application/json;charset=utf-8"}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),800)}
 
 document.getElementById("importPhrase").onchange=e=>readJSON(e.target.files[0],x=>{
-  const arr=Array.isArray(x)?x:(x.phrases||[]);
-  if(!Array.isArray(arr)){alert("语料包格式不正确");return}
-  const map=new Map(db.phrases.map(p=>[p.id,p]));let added=0;
-  arr.forEach(p=>{
-    if(!p.phrase||!p.functionZh)return;
-    p.id=p.id||norm(p.phrase).replace(/\s+/g,"_").slice(0,90);
-    const old=map.get(p.id);map.set(p.id,mergePhrase(old,p));if(!old)added++
+  const arr=Array.isArray(x)?x:(Array.isArray(x.phrases)?x.phrases:[]);
+  const map=new Map(db.phrases.map(p=>[p.id,p]));let added=0,updated=0,skipped=0;
+  arr.forEach(raw=>{
+    if(!raw||!raw.phrase||!raw.functionZh){skipped++;return}
+    const n=normalizePhrase(raw),old=map.get(n.id);
+    map.set(n.id,mergePhrase(old,n));old?updated++:added++
   });
-  db.phrases=[...map.values()];save();
-function showView(id, pushHash=true){
-  const target=document.getElementById(id)||document.getElementById("overview");
-  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v===target));
-  document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.view===target.id));
-  if(pushHash && location.hash!=="#"+target.id){
-    try{history.pushState({view:target.id},"","#"+target.id)}catch(e){location.hash=target.id}
-  }
-  window.scrollTo({top:0,behavior:"auto"});
-  if(target.id==="browse")renderBrowse();
-}
-document.querySelectorAll(".navbtn").forEach(b=>b.onclick=()=>showView(b.dataset.view));
-document.querySelectorAll(".backhome").forEach(b=>b.onclick=()=>showView(b.dataset.back||"overview"));
-window.addEventListener("popstate",()=>showView((location.hash||"#overview").slice(1),false));
-window.addEventListener("hashchange",()=>showView((location.hash||"#overview").slice(1),false));
-
-setupTags();renderOverview();renderBrowse();showView((location.hash||"#overview").slice(1),false);
-  alert("导入完成：新增 "+added+" 条；重复语料已合并并保留进度。")
+  db.phrases=[...map.values()];save();setupTags();renderOverview();browsePage=1;renderBrowse();
+  alert(`导入完成：新增 ${added}，更新 ${updated}${skipped?`，跳过 ${skipped}`:""}。已有复习记录保留。`)
 });
 document.getElementById("exportBackup").onclick=()=>{
   const d=new Date().toISOString().slice(0,10);
-  download("TRKI_C1_phrase_backup_"+d+".json",JSON.stringify({format:"TRKI-C1-PHRASES-BACKUP",version:1.1,exportedAt:new Date().toISOString(),db,session:savedPhraseSession()},null,2))
+  download("TRKI_C1_phrase_backup_"+d+".json",JSON.stringify({format:"TRKI-C1-PHRASES-BACKUP",version:2.3,exportedAt:new Date().toISOString(),db,session:savedSession()},null,2))
 };
 document.getElementById("exportContent").onclick=()=>{
   const d=new Date().toISOString().slice(0,10);
-  download("TRKI_C1_phrase_content_"+d+".json",JSON.stringify({format:"TRKI-C1-PHRASE-PACK",version:1,phrases:db.phrases.map(({writingHistory,speakingHistory,nextWritingDue,nextSpeakingDue,...rest})=>rest)},null,2))
+  const phrases=db.phrases.map(p=>{
+    const {writingHistory,speakingHistory,nextWritingDue,nextSpeakingDue,...rest}=p;return rest
+  });
+  download("TRKI_C1_phrase_content_"+d+".json",JSON.stringify({format:"TRKI-C1-PHRASE-PACK",version:2,phrases},null,2))
 };
 document.getElementById("importBackup").onchange=e=>readJSON(e.target.files[0],x=>{
-  const obj=x&&x.db?x.db:x;if(!obj||!Array.isArray(obj.phrases)){alert("不是有效的语料库备份");return}
-  db=obj;save();if(x&&x.session)localStorage.setItem(SESSION_KEY,JSON.stringify(x.session));else localStorage.removeItem(SESSION_KEY);
-function showView(id, pushHash=true){
-  const target=document.getElementById(id)||document.getElementById("overview");
-  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v===target));
-  document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.view===target.id));
-  if(pushHash && location.hash!=="#"+target.id){
-    try{history.pushState({view:target.id},"","#"+target.id)}catch(e){location.hash=target.id}
-  }
-  window.scrollTo({top:0,behavior:"auto"});
-  if(target.id==="browse")renderBrowse();
-}
-document.querySelectorAll(".navbtn").forEach(b=>b.onclick=()=>showView(b.dataset.view));
-document.querySelectorAll(".backhome").forEach(b=>b.onclick=()=>showView(b.dataset.back||"overview"));
-window.addEventListener("popstate",()=>showView((location.hash||"#overview").slice(1),false));
-window.addEventListener("hashchange",()=>showView((location.hash||"#overview").slice(1),false));
-
-setupTags();renderOverview();renderBrowse();showView((location.hash||"#overview").slice(1),false);alert("语料库备份已恢复")
+  const obj=x&&x.db?x.db:x;
+  if(!obj||!Array.isArray(obj.phrases)){alert("不是有效的语料库备份");return}
+  db={...obj,version:2.3,phrases:obj.phrases.map(normalizePhrase)};
+  save();
+  if(x&&x.session)localStorage.setItem(SESSION_KEY,JSON.stringify(x.session));else localStorage.removeItem(SESSION_KEY);
+  setupTags();renderOverview();browsePage=1;renderBrowse();renderResume();alert("语料库备份已恢复。")
 });
-document.getElementById("startWriting").onclick=()=>start("writing");
-document.getElementById("startSpeaking").onclick=()=>start("speaking");
-document.getElementById("resumeSession").onclick=resumePhraseSession;
-document.getElementById("discardSession").onclick=()=>{if(confirm("放弃这轮未完成训练？已经记录的成绩不会删除。"))clearPhraseSession()};
 
-
-function showView(id, pushHash=true){
+function showView(id,pushHash=true){
   const target=document.getElementById(id)||document.getElementById("overview");
   document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v===target));
   document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.view===target.id));
-  if(pushHash && location.hash!=="#"+target.id){
+  if(pushHash&&location.hash!=="#"+target.id){
     try{history.pushState({view:target.id},"","#"+target.id)}catch(e){location.hash=target.id}
   }
-  window.scrollTo({top:0,behavior:"auto"});
-  if(target.id==="browse")renderBrowse();
+  window.scrollTo(0,0);
+  if(target.id==="browse")renderBrowse()
 }
 document.querySelectorAll(".navbtn").forEach(b=>b.onclick=()=>showView(b.dataset.view));
-document.querySelectorAll(".backhome").forEach(b=>b.onclick=()=>showView(b.dataset.back||"overview"));
 window.addEventListener("popstate",()=>showView((location.hash||"#overview").slice(1),false));
 window.addEventListener("hashchange",()=>showView((location.hash||"#overview").slice(1),false));
 
-setupTags();renderOverview();renderBrowse();renderResume();showView((location.hash||"#overview").slice(1),false);
+document.getElementById("startTranslation").onclick=()=>start("translation");
+document.getElementById("startFunction").onclick=()=>start("function");
+document.getElementById("startSpeaking").onclick=()=>start("speaking");
+document.getElementById("resumeSession").onclick=resumeSession;
+document.getElementById("discardSession").onclick=()=>{if(confirm("放弃这轮未完成训练？已经记录的成绩不会删除。"))clearSession()};
+
+setupTags();
+renderOverview();
+renderBrowse();
+renderResume();
+showView((location.hash||"#overview").slice(1),false);
 </script>
 </body>
 </html>
