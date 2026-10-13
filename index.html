@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>ТРКИ-C1 输出语料库 v2.3</title>
+<title>ТРКИ-C1 输出语料库 v2.4</title>
 <style>
 :root{
   --bg:#f5f5f8;--p:#fff;--t:#17171a;--m:#777780;--l:#dddde5;
@@ -78,12 +78,24 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
   .actions,.filterline,.grades{grid-template-columns:1fr}
   .phrase{font-size:23px}.prompt{font-size:19px}
 }
+
+.filtergroups{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:9px}
+.filterbox label{display:block;font-size:11px;color:var(--m);margin:0 0 5px 2px;font-weight:700}
+.filterbox select{width:100%;min-width:0}
+.canonmeta{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.canonbadge{font-size:11px;background:var(--chip);padding:5px 8px;border-radius:999px}
+.canonbadge.type{font-weight:800}
+.filterhelp{font-size:12px;color:var(--m);margin-top:8px;line-height:1.55}
+@media(max-width:620px){
+  .filtergroups{grid-template-columns:1fr 1fr}
+}
+
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="hero">
-    <h1>ТРКИ-C1 输出语料库 <span class="version">v2.3</span></h1>
+    <h1>ТРКИ-C1 输出语料库 <span class="version">v2.4</span></h1>
     <div class="sub">把阅读、听力和写作材料里的高价值表达，变成真正能在写作和口语里调出来的东西。</div>
     <div class="switcher">
       <a href="https://domoyo399-byte.github.io/trki-c1-flashcards/">📚 单词系统</a>
@@ -121,18 +133,30 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
   <section id="browse" class="view">
     <h2>语料浏览 / 学习</h2>
     <div class="panel">
-      <div class="filterline">
-        <input id="searchInput" placeholder="搜索俄语 / 中文功能 / 标签 / 来源">
-        <select id="tagFilter"><option value="">全部标签</option></select>
+      <input id="searchInput" style="width:100%" placeholder="搜索俄语 / 中文功能 / 来源">
+      <div class="filtergroups">
+        <div class="filterbox">
+          <label>用途</label>
+          <select id="functionFilter"></select>
+        </div>
+        <div class="filterbox">
+          <label>使用场景</label>
+          <select id="channelFilter"></select>
+        </div>
+        <div class="filterbox">
+          <label>语料形式</label>
+          <select id="typeFilter"></select>
+        </div>
+        <div class="filterbox">
+          <label>语域</label>
+          <select id="registerFilter"></select>
+        </div>
       </div>
-      <div class="filterchips">
-        <button class="chipbtn active" data-type="">全部</button>
-        <button class="chipbtn" data-type="类型:框架">框架</button>
-        <button class="chipbtn" data-type="类型:展开模块">展开模块</button>
-        <button class="chipbtn" data-type="类型:整句模型">整句模型</button>
-        <button class="chipbtn" data-type="写作">写作</button>
-        <button class="chipbtn" data-type="口语">口语</button>
+      <div class="filterbox" id="topicFilterBox" style="margin-top:9px;display:none">
+        <label>主题（只有真正存在主题标签时才显示）</label>
+        <select id="topicFilter" style="width:100%"></select>
       </div>
+      <div class="filterhelp">这里只显示整理后的少量分类。旧数据里那些 evaluation / adding-point / formal / governance 等原始标签会在后台自动归类，不再整锅端给你看。</div>
       <div class="browse-status">
         <span id="browseCount">显示 0 / 0</span>
         <span>每页 20 条，卡片详情按需展开</span>
@@ -186,7 +210,7 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
       <h3>句子翻译覆盖</h3>
       <div class="row"><span>已有翻译题</span><b id="dataReadyN">0</b></div>
       <div class="row"><span>仍待补充</span><b id="dataMissingN">0</b></div>
-      <div class="muted" style="margin-top:8px">v2.3 会自动补上本轮已知的部分旧语料。今后的同步包则直接写入 <code>translationPrompts</code>，不再靠网页猜。</div>
+      <div class="muted" style="margin-top:8px">v2.4 会自动补上本轮已知的部分旧语料。今后的同步包则直接写入 <code>translationPrompts</code>，不再靠网页猜。</div>
     </div>
     <div class="notice" id="dbNotice"></div>
   </section>
@@ -208,6 +232,92 @@ function norm(s){return stripMarks(s).toLowerCase().replace(/ё/g,"е").replace(
 function esc(s=""){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
 function safeArray(x){return Array.isArray(x)?x:[]}
 function safeTags(p){return safeArray(p.tags).map(String)}
+
+function cleanTag(t){return String(t||"").trim()}
+const FUNCTION_OPTIONS=[
+  "立场评价","反驳","原因结果","转折让步","补充递进","举例说明",
+  "比较对照","条件依赖","引入组织","总结概括","信息来源",
+  "强调限定","正式沟通","叙述描写","修辞提问","论证通用"
+];
+const CHANNEL_OPTIONS=["写作","口语","商务信函"];
+const TYPE_OPTIONS=["框架","展开模块","整句模型","固定表达"];
+const REGISTER_OPTIONS=["正式","中性","口语"];
+
+function canonicalMeta(p){
+  const raw=safeTags(p).map(cleanTag);
+  const funcs=new Set(safeArray(p.functions).map(cleanTag));
+  const channels=new Set(safeArray(p.channels).map(cleanTag));
+  const topics=new Set(safeArray(p.topics).map(cleanTag));
+  let type=cleanTag(p.type||"");
+  let register=cleanTag(p.register||"");
+
+  const has=(x)=>raw.includes(x);
+  const hasAny=(arr)=>arr.some(x=>has(x));
+
+  if(!type){
+    if(has("类型:框架")) type="框架";
+    else if(has("类型:展开模块")) type="展开模块";
+    else if(has("类型:整句模型")) type="整句模型";
+    else if(hasAny(["fixed-expression","固定表达"])) type="固定表达";
+  }
+
+  if(!register){
+    if(hasAny(["formal","正式"])) register="正式";
+    else if(has("中性")) register="中性";
+    else if(hasAny(["偏口语","语域:口语"])) register="口语";
+  }
+
+  if(has("写作")) channels.add("写作");
+  if(has("口语")) channels.add("口语");
+  if(hasAny(["商务信函"])) channels.add("商务信函");
+
+  const map=[
+    [["evaluation","评价","立场"],"立场评价"],
+    [["反驳"],"反驳"],
+    [["原因","结果"],"原因结果"],
+    [["让步","转折"],"转折让步"],
+    [["adding-point","补充","递进"],"补充递进"],
+    [["举例"],"举例说明"],
+    [["比较","交替","对照"],"比较对照"],
+    [["条件","依赖"],"条件依赖"],
+    [["topic-introduction","开头","引入"],"引入组织"],
+    [["概括","总结"],"总结概括"],
+    [["信息来源"],"信息来源"],
+    [["强调","否定","限定","caution","提醒"],"强调限定"],
+    [["communication","正式沟通","商务信函"],"正式沟通"],
+    [["description","叙事","叙述","描写"],"叙述描写"],
+    [["rhetorical-question","修辞提问"],"修辞提问"],
+    [["argumentation","论证"],"论证通用"]
+  ];
+  for(const [keys,val] of map) if(keys.some(k=>has(k))) funcs.add(val);
+
+  raw.forEach(t=>{
+    if(t.startsWith("主题:")&&t.length>3) topics.add(t.slice(3));
+  });
+  if(has("institutional")) topics.add("机构 / 制度");
+
+  // Generic/noisy legacy tags intentionally do not become primary filters:
+  // 通用 / C1 / governance / fixed-expression / formal / 中性 etc.
+  return {
+    type: TYPE_OPTIONS.includes(type)?type:"",
+    functions:[...funcs].filter(x=>FUNCTION_OPTIONS.includes(x)),
+    channels:[...channels].filter(x=>CHANNEL_OPTIONS.includes(x)),
+    register:REGISTER_OPTIONS.includes(register)?register:"",
+    topics:[...topics].filter(Boolean)
+  }
+}
+function canonicalBadges(p){
+  const m=canonicalMeta(p),out=[];
+  if(m.type) out.push({text:m.type,kind:"type"});
+  m.functions.slice(0,2).forEach(x=>out.push({text:x,kind:""}));
+  m.channels.slice(0,2).forEach(x=>out.push({text:x,kind:""}));
+  if(m.register) out.push({text:m.register,kind:""});
+  return out.slice(0,5)
+}
+function optionsHTML(allLabel,values){
+  return `<option value="">${allLabel}</option>`+values.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("")
+}
+
 function phraseId(p){return p.id||norm(p.phrase).replace(/\s+/g,"_").slice(0,90)}
 
 function normalizeTranslationPrompts(p){
@@ -257,7 +367,7 @@ function readKey(key){
 }
 function load(){
   let current=readKey(STORAGE_KEY);
-  if(!current)current={format:"TRKI-C1-PHRASE-DB",version:2.3,phrases:[]};
+  if(!current)current={format:"TRKI-C1-PHRASE-DB",version:2.4,phrases:[]};
   current.phrases=safeArray(current.phrases).map(normalizePhrase);
   if(!current.phrases.length){
     for(const key of LEGACY_KEYS){
@@ -271,12 +381,12 @@ function load(){
       }
     }
   }
-  current.version=2.3;
+  current.version=2.4;
   localStorage.setItem(STORAGE_KEY,JSON.stringify(current));
   return current
 }
 let db=load();
-let browsePage=1,browseType="";
+let browsePage=1;
 let session={mode:null,deck:[],i:0,pending:null};
 
 function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(db))}
@@ -308,20 +418,40 @@ function renderOverview(){
   document.getElementById("dataMissingN").textContent=Math.max(0,total-ready);
   document.getElementById("dbNotice").textContent=total
     ? "✅ 语料数据库已读取。浏览页会明确显示匹配数量，不会再出现一片空白却不告诉你发生了什么。"
-    : "⚠️ 当前 trki_c1_phrase_db_v1 里没有语料。如果你以前的语料在旧版 trki_c1_phrases_v03，v2.3 会自动迁移；若仍为 0，请从学习中心重新导入同步包或恢复完整备份。";
+    : "⚠️ 当前 trki_c1_phrase_db_v1 里没有语料。如果你以前的语料在旧版 trki_c1_phrases_v03，v2.4 会自动迁移；若仍为 0，请从学习中心重新导入同步包或恢复完整备份。";
 }
 
-function setupTags(){
-  const tags=[...new Set(db.phrases.flatMap(p=>safeTags(p)))].sort((a,b)=>a.localeCompare(b,"zh-CN"));
-  document.getElementById("tagFilter").innerHTML='<option value="">全部标签</option>'+tags.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("");
+function setupFilters(){
+  document.getElementById("functionFilter").innerHTML=optionsHTML("全部用途",FUNCTION_OPTIONS);
+  document.getElementById("channelFilter").innerHTML=optionsHTML("全部场景",CHANNEL_OPTIONS);
+  document.getElementById("typeFilter").innerHTML=optionsHTML("全部形式",TYPE_OPTIONS);
+  document.getElementById("registerFilter").innerHTML=optionsHTML("全部语域",REGISTER_OPTIONS);
+  const topics=[...new Set(db.phrases.flatMap(p=>canonicalMeta(p).topics))].sort((a,b)=>a.localeCompare(b,"zh-CN"));
+  const box=document.getElementById("topicFilterBox");
+  if(topics.length){
+    document.getElementById("topicFilter").innerHTML=optionsHTML("全部主题",topics);
+    box.style.display="block";
+  }else{
+    document.getElementById("topicFilter").innerHTML='<option value="">全部主题</option>';
+    box.style.display="none";
+  }
 }
 function filteredPhrases(){
   const q=norm(document.getElementById("searchInput").value||"");
-  const tag=document.getElementById("tagFilter").value;
+  const fn=document.getElementById("functionFilter").value;
+  const ch=document.getElementById("channelFilter").value;
+  const tp=document.getElementById("typeFilter").value;
+  const rg=document.getElementById("registerFilter").value;
+  const topic=document.getElementById("topicFilter").value;
   return db.phrases.filter(p=>{
-    const tags=safeTags(p);
-    const hay=norm([p.phrase,p.functionZh,p.pattern,p.source,...tags,...p.transferExamples].join(" "));
-    return (!q||hay.includes(q))&&(!tag||tags.includes(tag))&&(!browseType||tags.includes(browseType))
+    const m=canonicalMeta(p);
+    const hay=norm([p.phrase,p.functionZh,p.pattern,p.source,...p.transferExamples,...safeTags(p)].join(" "));
+    return (!q||hay.includes(q))
+      &&(!fn||m.functions.includes(fn))
+      &&(!ch||m.channels.includes(ch))
+      &&(!tp||m.type===tp)
+      &&(!rg||m.register===rg)
+      &&(!topic||m.topics.includes(topic))
   })
 }
 function phraseCard(p){
@@ -331,8 +461,8 @@ function phraseCard(p){
     return `<div class="phrase-card">
       <div class="phrase">${esc(p.phrase)}</div>
       <div class="function">${esc(p.functionZh||"（未填写中文功能）")}</div>
-      <div class="meta">
-        ${safeTags(p).map(t=>`<span class="badge">${esc(t)}</span>`).join("")}
+      <div class="canonmeta">
+        ${canonicalBadges(p).map(x=>`<span class="canonbadge ${x.kind}">${esc(x.text)}</span>`).join("")}
         ${prompts.length?`<span class="badge ready">句子翻译 ×${prompts.length}</span>`:`<span class="badge missing">待补翻译题</span>`}
       </div>
       <details class="carddetails">
@@ -373,12 +503,9 @@ function renderBrowse(){
   list.innerHTML=chunk.map(phraseCard).join("");
 }
 document.getElementById("searchInput").addEventListener("input",()=>{browsePage=1;renderBrowse()});
-document.getElementById("tagFilter").addEventListener("change",()=>{browsePage=1;renderBrowse()});
-document.querySelectorAll(".chipbtn").forEach(b=>b.addEventListener("click",()=>{
-  browseType=b.dataset.type||"";
-  document.querySelectorAll(".chipbtn").forEach(x=>x.classList.toggle("active",x===b));
-  browsePage=1;renderBrowse()
-}));
+["functionFilter","channelFilter","typeFilter","registerFilter","topicFilter"].forEach(id=>{
+  document.getElementById(id).addEventListener("change",()=>{browsePage=1;renderBrowse()})
+});
 document.getElementById("prevPage").onclick=()=>{browsePage--;renderBrowse();window.scrollTo(0,0)};
 document.getElementById("nextPage").onclick=()=>{browsePage++;renderBrowse();window.scrollTo(0,0)};
 
@@ -547,12 +674,12 @@ document.getElementById("importPhrase").onchange=e=>readJSON(e.target.files[0],x
     const n=normalizePhrase(raw),old=map.get(n.id);
     map.set(n.id,mergePhrase(old,n));old?updated++:added++
   });
-  db.phrases=[...map.values()];save();setupTags();renderOverview();browsePage=1;renderBrowse();
+  db.phrases=[...map.values()];save();setupFilters();renderOverview();browsePage=1;renderBrowse();
   alert(`导入完成：新增 ${added}，更新 ${updated}${skipped?`，跳过 ${skipped}`:""}。已有复习记录保留。`)
 });
 document.getElementById("exportBackup").onclick=()=>{
   const d=new Date().toISOString().slice(0,10);
-  download("TRKI_C1_phrase_backup_"+d+".json",JSON.stringify({format:"TRKI-C1-PHRASES-BACKUP",version:2.3,exportedAt:new Date().toISOString(),db,session:savedSession()},null,2))
+  download("TRKI_C1_phrase_backup_"+d+".json",JSON.stringify({format:"TRKI-C1-PHRASES-BACKUP",version:2.4,exportedAt:new Date().toISOString(),db,session:savedSession()},null,2))
 };
 document.getElementById("exportContent").onclick=()=>{
   const d=new Date().toISOString().slice(0,10);
@@ -564,10 +691,10 @@ document.getElementById("exportContent").onclick=()=>{
 document.getElementById("importBackup").onchange=e=>readJSON(e.target.files[0],x=>{
   const obj=x&&x.db?x.db:x;
   if(!obj||!Array.isArray(obj.phrases)){alert("不是有效的语料库备份");return}
-  db={...obj,version:2.3,phrases:obj.phrases.map(normalizePhrase)};
+  db={...obj,version:2.4,phrases:obj.phrases.map(normalizePhrase)};
   save();
   if(x&&x.session)localStorage.setItem(SESSION_KEY,JSON.stringify(x.session));else localStorage.removeItem(SESSION_KEY);
-  setupTags();renderOverview();browsePage=1;renderBrowse();renderResume();alert("语料库备份已恢复。")
+  setupFilters();renderOverview();browsePage=1;renderBrowse();renderResume();alert("语料库备份已恢复。")
 });
 
 function showView(id,pushHash=true){
@@ -590,7 +717,7 @@ document.getElementById("startSpeaking").onclick=()=>start("speaking");
 document.getElementById("resumeSession").onclick=resumeSession;
 document.getElementById("discardSession").onclick=()=>{if(confirm("放弃这轮未完成训练？已经记录的成绩不会删除。"))clearSession()};
 
-setupTags();
+setupFilters();
 renderOverview();
 renderBrowse();
 renderResume();
