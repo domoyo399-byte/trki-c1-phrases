@@ -91,12 +91,8 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
 }
 
 
-/* four-repo-root v4 viewport (legacy v3 rules). One document scroller; no fixed body height or nested scroll traps. */
-html{min-height:100%;height:auto;overflow-y:auto;overscroll-behavior-y:none;-webkit-text-size-adjust:100%}
-body{min-height:100svh;height:auto;overflow-x:clip;overscroll-behavior-y:none}
-.wrap{min-height:100svh;max-width:100%}
-@media(min-width:700px){.wrap{max-width:880px}}
-@supports not (height:100svh){body,.wrap{min-height:100vh}}
+/* v4.2: Restore native document scrolling and browser pull-to-refresh.
+   Removed candidate-v3 viewport/overscroll overrides; original layout CSS unchanged. */
 </style>
 <meta name="trki-candidate-build" content="2026-10-22-four-repo-root-v4">
 </head>
