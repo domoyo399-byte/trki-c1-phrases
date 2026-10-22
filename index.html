@@ -98,8 +98,8 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
     <h1>ТРКИ-C1 输出语料库 <span class="version">v2.4</span></h1>
     <div class="sub">把阅读、听力和写作材料里的高价值表达，变成真正能在写作和口语里调出来的东西。</div>
     <div class="switcher">
-      <a href="https://domoyo399-byte.github.io/trki-c1-flashcards/">📚 单词系统</a>
-      <a class="current" href="https://domoyo399-byte.github.io/trki-c1-phrases/">💬 输出语料</a>
+      <a href="https://domoyo399-byte.github.io/trki-c1-flashcards/candidate-v2/">📚 单词系统</a>
+      <a class="current" href="https://domoyo399-byte.github.io/trki-c1-phrases/candidate-v2/">💬 输出语料</a>
     </div>
   </div>
 
@@ -216,112 +216,248 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
   </section>
 </div>
 
-<a class="hub-fab" href="https://domoyo399-byte.github.io/trki-c1-hub/">⌂ 学习中心</a>
+<a class="hub-fab" href="https://domoyo399-byte.github.io/trki-c1-hub/candidate-v2/">⌂ 学习中心</a>
 
 <script>
-/* TRKI-C1 IndexedDB storage bridge | Candidate 2026-10-21
- * Preserves legacy key names, page-local sessions and the original data shapes.
- * No automatic deletion/migration.  Hub explicitly initiates verified migration.
+/* TRKI-C1 storage bridge v2.0 Candidate 2026-10-22.
+ * Isolated database. No reads/writes/deletes to the v1 IndexedDB database.
+ * Keys, backups and payload shapes remain compatible with legacy apps.
  */
 (function(){
 'use strict';
-const CORE=['trki_c1_srs_v5','trki_c1_phrase_db_v1','trki_c1_grammar_errors_v1'];
-const LARGE=['trki_c1_hub_undo_v1','trki_c1_vocab_rollback_v6'];
-const KEYS=new Set([...CORE,...LARGE]);
-const MARK='__trki_c1_indexeddb_migrated_v1';
-let db=null, migrated=false, cache=new Map(), queue=Promise.resolve(), writeError=null;
-const statusId='trki-idb-status';
-function status(message,level='warn'){
-  let el=document.getElementById(statusId);
-  if(!el){el=document.createElement('aside');el.id=statusId;el.setAttribute('role','status');el.style.cssText='position:sticky;top:0;z-index:9999;padding:12px 15px;font:14px/1.6 -apple-system,BlinkMacSystemFont,sans-serif;border:2px solid #edb163;background:#fff3df;color:#272018;white-space:pre-wrap;';document.body.prepend(el)}
-  if(level==='error')el.style.borderColor='#ce4848';el.textContent=message;
+const NAME='trki_c1_learning_storage_v2_20261022', VERSION=1;
+const VOCAB='trki_c1_srs_v5', PHRASE='trki_c1_phrase_db_v1', GRAMMAR='trki_c1_grammar_errors_v1';
+const CORE=[VOCAB,PHRASE,GRAMMAR], UNDO=['trki_c1_hub_undo_v1','trki_c1_vocab_rollback_v6'];
+const LARGE=new Set([...CORE,...UNDO]), VOCAB_SESSION='trki_c1_vocab_session_v1';
+let conn=null, ready=false, cache=new Map(), vCards=new Map(), vocabDay=undefined, vocabSession=undefined;
+let rev={}, queue=Promise.resolve(), lastError=null, stopped=false, pending=0;
+const revKey=k=>'__revision_v2_'+k;
+const errors=[];
+function diagnostic(stage,e){
+ const message=String(e?.message||e||'unknown');
+ const info={time:new Date().toISOString(),stage,name:e?.name||'Error',message};
+ errors.push(info);if(errors.length>50)errors.shift();lastError=info;
+ try{console.error('[TRKI Storage v2]',info)}catch(_){}
+ return info;
 }
-function open(){return new Promise((resolve,reject)=>{
- if(!('indexedDB' in window))return reject(Error('浏览器不支持 IndexedDB'));
- const r=indexedDB.open('trki_c1_learning_storage_v1',1);
- r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('kv'))r.result.createObjectStore('kv')};
- r.onerror=()=>reject(r.error||Error('无法打开 IndexedDB'));
- r.onblocked=()=>reject(Error('数据库升级被其他页面阻止，请关闭其它学习页面后重试'));
- r.onsuccess=()=>resolve(r.result);
-})}
-function readMany(keys){return new Promise((resolve,reject)=>{
- const t=db.transaction('kv','readonly'),st=t.objectStore('kv'),rows={};
- for(const k of keys){let r=st.get(k);r.onsuccess=()=>{rows[k]=r.result}}
- t.oncomplete=()=>resolve(rows);t.onerror=()=>reject(t.error||Error('读取 IndexedDB 失败'));t.onabort=()=>reject(t.error||Error('读取中止'));
-})}
-function writeMany(data){return new Promise((resolve,reject)=>{
- const t=db.transaction('kv','readwrite'),st=t.objectStore('kv');
- for(const [k,v] of Object.entries(data)){if(v===undefined)throw Error('写入含 undefined：'+k);st.put(v,k)}
- t.oncomplete=()=>resolve();t.onerror=()=>reject(t.error||Error('写入 IndexedDB 失败'));t.onabort=()=>reject(t.error||Error('写入中止'));
-})}
-function queueWrite(data){const job=queue.catch(()=>{}).then(()=>writeMany(data));queue=job;return job}
-function readLocal(k){return localStorage.getItem(k)}
-function ensureJSON(k,v){if(v==null)return;let obj;try{obj=JSON.parse(v)}catch(e){throw Error(k+' 内容不是有效 JSON，已停止迁移')}
- if(k===CORE[0]&&(!obj||typeof obj.cards!=='object'||Array.isArray(obj.cards)))throw Error('单词库格式校验未通过，已停止迁移');
- if(k===CORE[1]&&(!obj||!Array.isArray(obj.phrases)))throw Error('语料库格式校验未通过，已停止迁移');
- if(k===CORE[2]&&(!obj||!Array.isArray(obj.items)))throw Error('错题库格式校验未通过，已停止迁移');
+function warning(text,severe=true){
+ let el=document.getElementById('trki-storage-v2-status');
+ if(!el){el=document.createElement('div');el.id='trki-storage-v2-status';el.setAttribute('role','alert');el.style.cssText='position:sticky;top:0;z-index:999998;padding:12px;background:#fff3df;border:2px solid #c9893b;color:#40251b;font:14px/1.6 -apple-system,BlinkMacSystemFont,sans-serif;white-space:pre-wrap;';document.body.prepend(el)}
+ el.style.borderColor=severe?'#c43':'#c9893b';el.textContent=text;
+ if(severe)window.TRKI_STORAGE_BLOCKED=true;
 }
-async function init(){
- db=await open();const records=await readMany([MARK,...KEYS]);migrated=records[MARK]===true;
- if(migrated){
-   for(const k of CORE){if(!Object.prototype.hasOwnProperty.call(records,k))throw Error('已迁移的数据库缺少 '+k+'，为防止重置学习进度，已停止启动。请使用已导出的完整备份恢复。')}
-   for(const k of KEYS){if(Object.prototype.hasOwnProperty.call(records,k))cache.set(k,records[k])}
-   // A previously-open browser tab may have left a stale legacy shadow. Never overwrite IndexedDB from it.
-   for(const k of CORE){const shadow=readLocal(k);if(shadow!=null)status('注意：发现尚未清理的旧库数据。当前以 IndexedDB 为准；请勿打开旧版本页面。','warn')}
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function makeError(message,name='StorageError'){const e=new Error(message);e.name=name;return e}
+function openDB(){return new Promise((resolve,reject)=>{
+ if(!indexedDB)return reject(makeError('此浏览器不支持 IndexedDB','NotSupportedError'));
+ let settled=false,request,timer;
+ const done=(err,value)=>{if(settled)return;settled=true;clearTimeout(timer);err?reject(err):resolve(value)};
+ try{request=indexedDB.open(NAME,VERSION)}catch(e){return done(e)}
+ timer=setTimeout(()=>done(makeError('新数据库连接超时。没有删除任何数据；请导出诊断并检查浏览器状态。','OpenTimeoutError')),15000);
+ request.onupgradeneeded=()=>{const d=request.result;for(const n of ['kv','vocabCards','vocabState'])if(!d.objectStoreNames.contains(n))d.createObjectStore(n)};
+ request.onerror=()=>done(request.error||makeError('数据库打开失败'));
+ request.onblocked=()=>done(makeError('数据库升级受其他标签页阻挡','BlockedError'));
+ request.onsuccess=()=>{
+  const d=request.result;
+  if(settled){d.close();return}
+  d.onversionchange=()=>{d.close();conn=null;stopped=true;warning('数据库版本已被其他页面更改，本页面已停止写入。请刷新后重新读取。')};
+  d.onclose=()=>{conn=null;stopped=true;warning('数据库连接意外关闭。本页面已停止写入，请不要继续答题。')};
+  done(null,d)
+ };
+})}
+function tx(stores,mode,handler){return new Promise((resolve,reject)=>{
+ if(!conn)return reject(makeError('数据库未连接','ConnectionError'));
+ let t,result,requestError=null,done=false;
+ const fail=e=>{if(done)return;done=true;reject(e)};
+ try{
+  t=conn.transaction(stores,mode);
+  t.onerror=e=>{requestError=(e.target&&e.target.error)||t.error||requestError};
+  t.onabort=()=>fail(requestError||t.error||makeError('IndexedDB事务中止（未提交）','AbortError'));
+  t.oncomplete=()=>{if(!done){done=true;resolve(result)}};
+  result=handler(t,(v)=>{result=v});
+ }catch(e){fail(e)}
+})}
+function getStoreSnapshot(t,n){return t.objectStore(n)}
+async function load(){
+ const raw=await tx(['kv','vocabCards','vocabState'],'readonly',(t,set)=>{
+   const out={kv:{},cards:{},state:{}};let jobs=0;
+   for(const n of ['kv','vocabCards','vocabState']){
+    const request=getStoreSnapshot(t,n).openCursor();
+    request.onsuccess=()=>{const c=request.result;if(c){out[n==='kv'?'kv':n==='vocabCards'?'cards':'state'][c.key]=c.value;c.continue()}else{jobs++;if(jobs===3)set(out)}};
+   }
+ });
+ cache=new Map(Object.entries(raw.kv));vCards=new Map(Object.entries(raw.cards));
+ vocabDay=Object.prototype.hasOwnProperty.call(raw.state,'day')?raw.state.day:undefined;
+ vocabSession=Object.prototype.hasOwnProperty.call(raw.state,'session')?raw.state.session:undefined;
+ rev=Object.fromEntries(CORE.map(k=>[k,Number(cache.get(revKey(k))||0)]));
+ ready=cache.get('__initialized_v2')===true;
+ if(ready){
+  for(const k of CORE)if(typeof cache.get(k)!=='string')throw makeError('新存储缺少有效主库：'+k+'。请从备份恢复，不要继续答题。','DataIncompleteError');
+  for(const k of CORE)validate(k,cache.get(k));
+  materializeVocab();
  }
- return migrated;
+ return ready
 }
-function getItem(k){if(migrated&&KEYS.has(k))return cache.has(k)?cache.get(k):null;return readLocal(k)}
-function setItem(k,v){v=String(v);
- if(migrated&&KEYS.has(k)){
-   cache.set(k,v);
-   return queueWrite({[k]:v}).then(()=>{writeError=null},e=>{writeError=e;status('⚠️ 学习数据写入失败：'+e.message+'\n请不要清理浏览器数据；立即在 Hub 导出备份。','error');throw e});
+function materializeVocab(){
+ const source=cache.get(VOCAB);if(typeof source!=='string')return;
+ let obj;try{obj=JSON.parse(source)}catch(e){throw makeError('新词库数据无法解析','DataFormatError')}
+ if(!obj||!obj.cards||typeof obj.cards!=='object')throw makeError('新词库不含 cards','DataFormatError');
+ for(const [id,card] of vCards)obj.cards[id]=card;
+ if(vocabDay!==undefined&&vocabDay!==null)obj.day=vocabDay;
+ cache.set(VOCAB,JSON.stringify(obj));
+}
+function validate(k,v){if(v==null)return;let o;
+ try{o=typeof v==='string'?JSON.parse(v):v}catch(_){throw makeError('备份不是有效JSON：'+k,'DataFormatError')}
+ if(k===VOCAB&&(!o||!o.cards||typeof o.cards!=='object'||Array.isArray(o.cards)))throw makeError('词库缺少 cards','DataFormatError');
+ if(k===PHRASE&&(!o||!Array.isArray(o.phrases)))throw makeError('语料库缺少 phrases','DataFormatError');
+ if(k===GRAMMAR&&(!o||!Array.isArray(o.items)))throw makeError('错题库缺少 items','DataFormatError');
+}
+function readLocal(k){try{return localStorage.getItem(k)}catch(e){diagnostic('local.read:'+k,e);return null}}
+function getItem(k){
+ if(ready&&k===VOCAB_SESSION)return vocabSession===undefined?null:(vocabSession==null?null:JSON.stringify(vocabSession));
+ if(ready&&LARGE.has(k))return cache.get(k)??null;
+ return readLocal(k)
+}
+function ensureWriteAllowed(){if(!conn||!ready||stopped)throw makeError('当前数据库不可写。请先完成安全恢复，或修复数据库连接。','NotReadyError')}
+// All mutations compare a monotone revision inside the write transaction.
+function writeChecked(stores,fn,stage,affected=[]){
+ const watched=[...new Set(affected.filter(k=>CORE.includes(k)))];
+ const job=queue.catch(()=>{}).then(async()=>{
+  ensureWriteAllowed();pending++;
+  try{
+   const next={};
+   await tx([...new Set(['kv',...stores])],'readwrite',t=>{
+    const kv=t.objectStore('kv'),values={};let completed=0;
+    const apply=()=>{
+      // Compare only libraries this operation actually changes. Saving a phrase
+      // should not invalidate a separate vocabulary tab.
+      for(const k of watched){
+        if(Number(values[k]||0)!==Number(rev[k]||0)){
+          diagnostic(stage+'.revision',makeError('同一资料库已在其他标签页更新。请刷新本页再继续，避免覆盖新记录。','StaleTabError'));
+          try{t.abort()}catch(_){};return;
+        }
+      }
+      try{
+        fn(t);
+        for(const k of watched){next[k]=Number(values[k]||0)+1;kv.put(next[k],revKey(k))}
+      }catch(e){diagnostic(stage+'.prepare',e);try{t.abort()}catch(_){}}
+    };
+    if(!watched.length)return apply();
+    for(const k of watched){const r=kv.get(revKey(k));r.onsuccess=()=>{values[k]=r.result;if(++completed===watched.length)apply()}}
+   });
+   Object.assign(rev,next);lastError=null;return true;
+  }catch(e){
+   const error=e?.name==='AbortError'&&lastError?.stage?.startsWith(stage+'.') ? makeError(lastError.message,lastError.name):e;
+   diagnostic(stage,error);stopped=true;
+   warning('⚠️ 保存未完成，已经暂停继续答题。\n'+(error?.name||'Error')+'：'+(error?.message||error)+'\n不要清理浏览器数据。请先导出 JSON 备份或诊断报告。');
+   throw error;
+  }finally{pending--}
+ });
+ queue=job.catch(()=>{});return job;
+}
+async function saveVocabStep(card,day,session){
+ ensureWriteAllowed();if(!card||typeof card!=='object'||!card.term)throw makeError('待保存词卡无效');
+ const id=String(card.contentId||card.term).trim();
+ // User-generated card IDs use a separate stable key in the app, resolved by the caller.
+ const cardKey=String(card.__storageId||id);
+ const capturedCard=clone(card),capturedDay=clone(day),capturedSession=session?clone(session):null;
+ await writeChecked(['vocabCards','vocabState'],t=>{
+   t.objectStore('vocabCards').put(capturedCard,cardKey);
+   t.objectStore('vocabState').put(capturedDay,'day');
+   t.objectStore('vocabState').put(capturedSession,'session');
+ },'vocab.answer',[VOCAB]);
+ vCards.set(cardKey,capturedCard);vocabDay=capturedDay;vocabSession=capturedSession;
+ // Update only the in-memory effective JSON, not the large persistent snapshot.
+ const obj=JSON.parse(cache.get(VOCAB));obj.cards[cardKey]=capturedCard;obj.day=capturedDay;cache.set(VOCAB,JSON.stringify(obj));
+ return true
+}
+function setItem(k,v){
+ v=String(v);
+ if(ready&&LARGE.has(k)){
+   validate(k,v);
+   return writeChecked(k===VOCAB?['vocabCards','vocabState']:[],t=>{
+     t.objectStore('kv').put(v,k);
+     if(k===VOCAB)t.objectStore('vocabCards').clear();
+   },'whole.save:'+k,CORE.includes(k)?[k]:[]).then(()=>{
+     cache.set(k,v);if(k===VOCAB){vCards.clear();vocabDay=undefined}
+     return true
+   });
  }
- return localStorage.setItem(k,v)
+ if(ready&&k===VOCAB_SESSION){let obj=JSON.parse(v);
+   return writeChecked(['vocabState'],t=>t.objectStore('vocabState').put(obj,'session'),'session.save').then(()=>{vocabSession=obj;return true});
+ }
+ localStorage.setItem(k,v);return Promise.resolve(true)
 }
 function removeItem(k){
- if(migrated&&KEYS.has(k)){
-  cache.set(k,null);
-  return queueWrite({[k]:null}).catch(e=>{writeError=e;status('⚠️ 删除数据失败：'+e.message,'error');throw e})
- }
- return localStorage.removeItem(k)
+ if(ready&&LARGE.has(k))return writeChecked(k===VOCAB?['vocabCards','vocabState']:[],t=>{
+   t.objectStore('kv').put(null,k);if(k===VOCAB)t.objectStore('vocabCards').clear();
+ },'whole.remove:'+k,CORE.includes(k)?[k]:[]).then(()=>{cache.delete(k);return true});
+ if(ready&&k===VOCAB_SESSION)return writeChecked(['vocabState'],t=>t.objectStore('vocabState').put(null,'session'),'session.remove').then(()=>{vocabSession=null;return true});
+ localStorage.removeItem(k);return Promise.resolve(true)
 }
-function key(index){return Array.from(new Set([...Array.from({length:localStorage.length},(_,i)=>localStorage.key(i)),...(migrated?KEYS:[])])).filter(k=>k!=null)[index]??null}
-function storageBytes(){let local=0,dbs=0;for(let i=0;i<localStorage.length;i++){let k=localStorage.key(i),v=localStorage.getItem(k)||'';local+=2*(k.length+v.length)}
- if(migrated)for(const k of KEYS){let v=cache.get(k);if(typeof v==='string')dbs+=2*(k.length+v.length)}
- return {local,db:dbs};
+function key(i){return [...new Set([...Object.keys(Object.fromEntries(cache)),...Array.from({length:localStorage.length},(_,j)=>localStorage.key(j))])][i]??null}
+function storageBytes(){let local=0,db=0;try{for(let i=0;i<localStorage.length;i++){let k=localStorage.key(i),v=localStorage.getItem(k)||'';local+=2*(k.length+v.length)}}catch(_){}
+ for(const [k,v] of cache)if(typeof v==='string')db+=2*(k.length+v.length);
+ return {local,db}
 }
-async function migrate(){
- if(migrated)return {already:true};
- await queue.catch(()=>{});
- const records={};for(const k of KEYS){let raw=readLocal(k);ensureJSON(k,raw);records[k]=raw}
- await writeMany({...records,[MARK]:true});
- const check=await readMany([...KEYS,MARK]);
- if(check[MARK]!==true||KEYS.size!==Object.keys(records).length||[...KEYS].some(k=>check[k]!==records[k]))throw Error('迁移验证失败，未清除旧数据');
- // Only after a completed, verified DB transaction do legacy keys get removed.
- migrated=true;for(const k of KEYS){cache.set(k,records[k]);localStorage.removeItem(k)}
- return {moved:CORE.filter(k=>records[k]!=null).length,bytesFreed:[...KEYS].reduce((a,k)=>a+2*(records[k]?.length||0),0)}
+async function refresh(){
+ if(!conn||stopped)throw makeError('连接异常，不能重新读取','ConnectionError');
+ await queue;await load();return ready;
 }
-async function commit(stores){
- if(!migrated)throw Error('请先完成备份及 IndexedDB 迁移，再进行导入/恢复');
- await queue.catch(()=>{});
- const bulk={},small={};
- for(const [k,v] of Object.entries(stores)){
-  if(KEYS.has(k))bulk[k]=v;
+async function init(){
+ if(conn&&ready&&!stopped)return true;
+ stopped=false;
+ try{conn=await openDB();await load();return ready}catch(e){diagnostic('init',e);stopped=true;throw e}
+}
+async function bootstrap(records){
+ if(!conn){conn=await openDB();await load()}
+ if(ready)throw makeError('新数据库已经有数据，禁止直接重新初始化。请先导出备份并使用现有恢复功能。','AlreadyInitializedError');
+ const src={};for(const k of CORE){const v=records[k];if(v==null)throw makeError('缺少备份：'+k,'MissingBackupError');validate(k,v);src[k]=typeof v==='string'?v:JSON.stringify(v)}
+ await tx(['kv','vocabCards','vocabState'],'readwrite',t=>{
+  for(const [k,v] of Object.entries(src))t.objectStore('kv').put(v,k);
+  t.objectStore('kv').put(true,'__initialized_v2');
+  for(const k of CORE)t.objectStore('kv').put(1,revKey(k));
+  t.objectStore('vocabCards').clear();t.objectStore('vocabState').clear();
+ });
+ await load();return true
+}
+async function commit(data){ensureWriteAllowed();const large={},small={};
+ for(const [k,v] of Object.entries(data)){
+  if(LARGE.has(k)){validate(k,v);large[k]=v}
   else small[k]=v;
  }
- for(const [k,v] of Object.entries(bulk))if(typeof v==='string')ensureJSON(k,v);
- for(const [k,v] of Object.entries(small)){
-  if(v!=null&&typeof v!=='string')throw Error('意外的数据类型: '+k)
+ // Changes in a Hub import must be a single IDB transaction; never show success early.
+ const hasSession=Object.prototype.hasOwnProperty.call(small,VOCAB_SESSION);
+ const hasVocab=Object.prototype.hasOwnProperty.call(large,VOCAB);
+ const normalizedSession=hasSession&&small[VOCAB_SESSION]!=null?JSON.parse(small[VOCAB_SESSION]):null;
+ await writeChecked(hasVocab?['vocabCards','vocabState']:hasSession?['vocabState']:[],t=>{
+  for(const [k,v] of Object.entries(large))t.objectStore('kv').put(v,k);
+  if(hasVocab){t.objectStore('vocabCards').clear();t.objectStore('vocabState').clear()}
+  if(hasSession)t.objectStore('vocabState').put(normalizedSession,'session');
+  else if(hasVocab&&vocabSession!==undefined)t.objectStore('vocabState').put(vocabSession,'session');
+ },'hub.commit',[...Object.keys(large).filter(k=>CORE.includes(k)),...(hasSession?[VOCAB]:[])]);
+ if(hasSession){vocabSession=normalizedSession;delete small[VOCAB_SESSION]}
+
+ for(const [k,v] of Object.entries(large)){
+  if(v==null)cache.delete(k);else cache.set(k,v)
  }
- // Typical hub import touches only IndexedDB keys. All bulk keys are written atomically.
- if(Object.keys(bulk).length)await writeMany(bulk);
- for(const [k,v] of Object.entries(bulk))cache.set(k,v);
- for(const [k,v] of Object.entries(small)){if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}
+ if(Object.prototype.hasOwnProperty.call(large,VOCAB)){
+   vCards.clear();vocabDay=undefined;vocabSession=undefined;
+ }
+ for(const [k,v] of Object.entries(small)){
+  if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,String(v))
+ }
+ return true
 }
-window.TRKIStore={init,getItem,setItem,removeItem,key,storageBytes,migrate,commit,
- get length(){return Array.from(new Set([...Array.from({length:localStorage.length},(_,i)=>localStorage.key(i)),...(migrated?KEYS:[])])).length},
- get isMigrated(){return migrated},get lastError(){return writeError},whenSaved:()=>queue};
+function exportDiag(){
+ return JSON.stringify({format:'TRKI-C1-STORAGE-DIAGNOSTICS',version:2,at:new Date().toISOString(),database:NAME,ready,stopped,pending,revision:rev,corePresent:CORE.map(k=>({key:k,present:typeof cache.get(k)==='string',size:(cache.get(k)||'').length})),deltaCardCount:vCards.size,errors},null,2)
+}
+function whenSaved(){return queue.then(()=>{if(stopped)throw makeError('最近写入失败，未保存','StorageError');return true})}
+window.TRKIStore={init,bootstrap,getItem,setItem,removeItem,saveVocabStep,commit,whenSaved,refresh,key,storageBytes,exportDiag,
+ get length(){return [...new Set([...Array.from(cache.keys()),...Array.from({length:localStorage.length},(_,i)=>localStorage.key(i))])].length},
+ get isMigrated(){return ready},get lastError(){return lastError},get blocked(){return stopped},get pending(){return pending},
+ migrate(){throw makeError('新版本使用从 JSON 备份显式恢复，不会自动清理旧数据库。','UseBootstrapError')}
+};
 })();
 
 </script>
@@ -489,14 +625,14 @@ function load(){
     }
   }
   current.version=2.4;
-  TRKIStore.setItem(STORAGE_KEY,JSON.stringify(current));
+  // No automatic whole-library writes when the page opens.
   return current
 }
 let db=load();
 let browsePage=1;
 let session={mode:null,deck:[],i:0,pending:null};
 
-function save(){TRKIStore.setItem(STORAGE_KEY,JSON.stringify(db))}
+function save(){return TRKIStore.setItem(STORAGE_KEY,JSON.stringify(db))}
 function recent(p,field,n){return safeArray(p[field]).slice(-n)}
 function writingAvgOf(p){
   const h=recent(p,"writingHistory",5).filter(x=>Number.isFinite(Number(x.score)));
@@ -748,13 +884,15 @@ function submitWriting(){
     <button class="primary" style="width:100%;margin-top:10px" onclick="saveWritingResult()">记录并下一题</button>`;
   session.pending={p,answer,r,mode:session.mode,target}
 }
-function saveWritingResult(){
+let phraseRecordSaving=false;
+async function saveWritingResult(){
+  if(phraseRecordSaving||TRKIStore.blocked)return;phraseRecordSaving=true;
   const {p,answer,r,mode,target}=session.pending;
   p.writingHistory=safeArray(p.writingHistory);
   p.writingHistory.push({time:Date.now(),mode,answer,target,score:r.score,criticalErrors:r.criticalErrors,keyErrors:r.keyErrors});
   if(p.writingHistory.length>40)p.writingHistory=p.writingHistory.slice(-40);
   p.nextWritingDue=Date.now()+intervalFromScore(r.score,r.criticalErrors)*DAY;
-  save();session.pending=null;session.i++;persistSession();renderTest();renderOverview()
+  try{await save();session.pending=null;session.i++;await persistSession();renderTest();renderOverview()}catch(e){alert("写入失败，训练已暂停："+e.message)}finally{phraseRecordSaving=false}
 }
 function revealSpeaking(){
   const p=session.deck[session.i],task=translationTask(p),target=task?task.ru:p.phrase;
@@ -762,18 +900,19 @@ function revealSpeaking(){
   el.innerHTML=`<div class="answerbox"><b>参考：</b><br><span class="phrase" style="font-size:22px">${esc(target)}</span><br><span class="muted">核心语料：${esc(p.phrase)}</span></div>
     <div class="grades"><button onclick="gradeSpeaking(0)">没想起来</button><button onclick="gradeSpeaking(1)">有提示 / 不稳</button><button class="primary" onclick="gradeSpeaking(2)">能主动调用</button></div>`
 }
-function gradeSpeaking(grade){
+async function gradeSpeaking(grade){
+  if(phraseRecordSaving||TRKIStore.blocked)return;phraseRecordSaving=true;
   const p=session.deck[session.i];p.speakingHistory=safeArray(p.speakingHistory);
   p.speakingHistory.push({time:Date.now(),grade});
   if(p.speakingHistory.length>40)p.speakingHistory=p.speakingHistory.slice(-40);
   p.nextSpeakingDue=Date.now()+(grade===2?4:grade===1?2:1)*DAY;
-  save();session.i++;persistSession();renderTest();renderOverview()
+  try{await save();session.i++;await persistSession();renderTest();renderOverview()}catch(e){alert("写入失败，训练已暂停："+e.message)}finally{phraseRecordSaving=false}
 }
 
-function readJSON(file,cb){if(!file)return;const r=new FileReader();r.onload=()=>{try{cb(JSON.parse(r.result))}catch(e){alert("JSON 读取失败："+e.message)}};r.readAsText(file)}
+function readJSON(file,cb){if(!file)return;const r=new FileReader();r.onload=async()=>{try{await cb(JSON.parse(r.result))}catch(e){alert("JSON 文件解析或保存失败："+e.message)}};r.readAsText(file)}
 function download(name,text){const a=document.createElement("a"),u=URL.createObjectURL(new Blob([text],{type:"application/json;charset=utf-8"}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),800)}
 
-document.getElementById("importPhrase").onchange=e=>readJSON(e.target.files[0],x=>{
+document.getElementById("importPhrase").onchange=e=>readJSON(e.target.files[0],async x=>{
   const arr=Array.isArray(x)?x:(Array.isArray(x.phrases)?x.phrases:[]);
   const map=new Map(db.phrases.map(p=>[p.id,p]));let added=0,updated=0,skipped=0;
   arr.forEach(raw=>{
@@ -781,7 +920,7 @@ document.getElementById("importPhrase").onchange=e=>readJSON(e.target.files[0],x
     const n=normalizePhrase(raw),old=map.get(n.id);
     map.set(n.id,mergePhrase(old,n));old?updated++:added++
   });
-  db.phrases=[...map.values()];save();setupFilters();renderOverview();browsePage=1;renderBrowse();
+  db.phrases=[...map.values()];await save();setupFilters();renderOverview();browsePage=1;renderBrowse();
   alert(`导入完成：新增 ${added}，更新 ${updated}${skipped?`，跳过 ${skipped}`:""}。已有复习记录保留。`)
 });
 document.getElementById("exportBackup").onclick=()=>{
@@ -831,17 +970,18 @@ renderResume();
 showView((location.hash||"#overview").slice(1),false);
 </script>
 <script>
-TRKIStore.init().then(() => {
+TRKIStore.init().then((ok) => {
+  if(!ok)throw new Error('新数据库尚未恢复备份。请先到 Hub 导入三站 JSON 备份并核验数据。');
   const source=document.getElementById('trki-original-app');
   const app=document.createElement('script');app.textContent=source.textContent;
   document.body.appendChild(app);
 }).catch(error => {
   const warning=document.createElement('div');warning.setAttribute('role','alert');
   warning.style.cssText='position:sticky;top:0;z-index:999999;margin:12px;padding:18px;background:#fff0df;color:#6a2525;border:2px solid #c44;border-radius:12px;font:16px/1.6 sans-serif';
-  warning.textContent='学习数据库启动失败，为保护已有数据，已停止加载此页面：'+error.message+'。请勿清空浏览器数据。';
+  warning.textContent='存储 v2 尚未可用，为保护已有数据，已停止加载此页面：'+error.message+'。请先到 Hub 恢复三库 JSON，不要清理浏览器数据。';
   document.body.prepend(warning);
 });
 </script>
-<div style="position:fixed;top:0;right:0;z-index:900;background:#efe7ff;color:#40316d;padding:3px 8px;font:11px sans-serif;opacity:.9;border-radius:0 0 0 9px">IndexedDB Candidate</div>
+<div style="position:fixed;top:0;right:0;z-index:900;background:#efe7ff;color:#40316d;padding:3px 8px;font:11px sans-serif;opacity:.9;border-radius:0 0 0 9px">Storage v2 Candidate</div>
 </body>
 </html>
