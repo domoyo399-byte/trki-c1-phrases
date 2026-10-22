@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>ТРКИ-C1 输出语料库 v2.4.2 · 精确释义提示 Candidate</title>
+<title>ТРКИ-C1 输出语料库 v2.4.3 · 专注答题 Candidate</title>
 <style>
 :root{
   --bg:#f5f5f8;--p:#fff;--t:#17171a;--m:#777780;--l:#dddde5;
@@ -97,13 +97,37 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
 
 /* v4.2: Restore native document scrolling and browser pull-to-refresh.
    Removed candidate-v3 viewport/overscroll overrides; original layout CSS unchanged. */
+/* v2.4.3: In-app focused training screen. Only UI structure is changed.
+   Keep ordinary document scrolling and Chrome iOS native pull-to-refresh. */
+body.practice-mode .hero,
+body.practice-mode .nav,
+body.practice-mode .hub-fab{display:none!important}
+body.practice-mode .wrap{max-width:700px;padding:calc(8px + env(safe-area-inset-top,0px)) 12px calc(24px + env(safe-area-inset-bottom,0px))}
+.practice-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 8px}
+.practice-exit{font-size:14px;font-weight:700;padding:10px 12px;white-space:nowrap}
+.practice-heading{flex:1;text-align:right;min-width:0}
+.practice-heading b{font-size:15px;display:block}
+.practice-heading small{font-size:12px;color:var(--m)}
+.practice-meter{height:5px;border-radius:5px;overflow:hidden;background:var(--chip);margin-bottom:7px}
+.practice-meter > span{display:block;width:0;height:100%;background:var(--ac);transition:width .2s}
+#practice .testbox{margin-top:0;padding:12px}
+#practice .testlabel{margin:2px 0 7px}
+#practice .prompt{font-size:19px;line-height:1.5}
+#practice .cue-caption{margin-bottom:4px}
+#practice .function-hint{margin:7px 0 1px;padding:7px 10px}
+#practice .prompt-sticky{position:sticky;top:0;z-index:3;background:var(--p);padding:6px 0 9px;border-bottom:1px solid var(--l)}
+#practice .practice-instruction{text-align:center;margin:9px 0 8px;font-size:12px;line-height:1.4;color:var(--m)}
+#practice textarea{min-height:105px;height:115px;resize:vertical;display:block;font-size:17px;line-height:1.4;scroll-margin-top:120px}
+#practice .practice-submit{width:100%;margin-top:8px;min-height:48px}
+#practice .practice-exit-note{text-align:center;margin:10px 0;font-size:12px;color:var(--m)}
+@media(max-width:620px){#practice .testbox{border-radius:16px}#practice .prompt{font-size:18px}#practice textarea{height:104px;min-height:104px}}
 </style>
-<meta name="trki-candidate-build" content="2026-10-22-phrase-recall-v2.4.2">
+<meta name="trki-candidate-build" content="2026-10-22-phrase-focus-v2.4.3">
 </head>
 <body>
 <div class="wrap">
   <div class="hero">
-    <h1>ТРКИ-C1 输出语料库 <span class="version">v2.4.2 Candidate</span></h1>
+    <h1>ТРКИ-C1 输出语料库 <span class="version">v2.4.3 Candidate</span></h1>
     <div class="sub">把阅读、听力和写作材料里的高价值表达，变成真正能在写作和口语里调出来的东西。</div>
     <div class="switcher">
       <a href="https://domoyo399-byte.github.io/trki-c1-flashcards/">📚 单词系统</a>
@@ -200,7 +224,17 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
       </div>
     </div>
 
-    <div id="testArea" class="testbox"><div class="muted" style="text-align:center">选择一种模式开始。</div></div>
+    <div class="muted" style="margin-top:12px">开始后进入站内独立答题页，返回此页不会清除已保存的进度。</div>
+  </section>
+
+  <section id="practice" class="view" aria-label="语料专注训练">
+    <div class="practice-top">
+      <button class="practice-exit" id="exitPractice" type="button">← 暂存返回</button>
+      <div class="practice-heading"><b>语料原句训练</b><small id="practiceProgress">0 / 0</small></div>
+    </div>
+    <div class="practice-meter" aria-hidden="true"><span id="practiceProgressBar"></span></div>
+    <div id="testArea" class="testbox"><div class="muted" style="text-align:center">从「今日复习」选择训练模式。</div></div>
+    <div class="practice-exit-note">已记录的作答自动保存。返回后可从「未完成训练」继续。</div>
   </section>
 
   <section id="data" class="view">
@@ -834,7 +868,7 @@ function resumeSession(){
   const s=savedSession();if(!s){alert("没有可继续的训练。");return}
   const map=new Map(db.phrases.map(p=>[p.id,p]));
   session={mode:s.mode,deck:s.ids.map(id=>map.get(id)).filter(Boolean),i:s.i,pending:null};
-  showView("review");renderTest()
+  showView("practice");renderTest()
 }
 
 function start(mode){
@@ -850,38 +884,46 @@ function start(mode){
     return ad-bd||av-bv
   });
   session={mode,deck:pool.slice(0,Math.min(10,pool.length)),i:0,pending:null};
-  persistSession();showView("review");renderTest()
+  persistSession();showView("practice");renderTest()
 }
 function renderTest(){
   const area=document.getElementById("testArea");
+  document.getElementById("practiceProgress").textContent=`${Math.min(session.i+1,session.deck.length)} / ${session.deck.length}`;
+  document.getElementById("practiceProgressBar").style.width=(session.deck.length?Math.min(100,session.i/session.deck.length*100):0)+"%";
   if(session.i>=session.deck.length){
     clearSession();
-    area.innerHTML='<div style="text-align:center"><b>这一轮完成了。</b><div class="muted" style="margin-top:8px">原句回忆记录已经更新。</div></div>';
-    renderOverview();renderBrowse();return;
+    document.getElementById("practiceProgress").textContent=`${session.deck.length} / ${session.deck.length}`;
+    document.getElementById("practiceProgressBar").style.width="100%";
+    area.innerHTML='<div style="text-align:center;padding:15px 0"><b>🎉 这一轮完成了。</b><div class="muted" style="margin-top:8px">原句回忆记录已经更新。</div><button class="primary practice-submit" type="button" onclick="showView(&quot;review&quot;)">返回今日复习</button></div>';
+    renderOverview();renderBrowse();window.scrollTo(0,0);return;
   }
   const p=session.deck[session.i];
   if(session.mode==="speaking"){
     area.innerHTML=`
       <div class="testlabel">🎙️ 口头原句回忆 · ${session.i+1}/${session.deck.length}</div>
-      ${cueHTML(p)}
+      <div class="prompt-sticky">${cueHTML(p)}</div>
       <div class="notice">先完整说出词库中这条语料的原句，再显示参考并自评。网页不判断发音。</div>
-      <button class="primary" style="width:100%;margin-top:10px" onclick="revealSpeaking()">显示语料原句</button>
+      <button class="primary practice-submit" onclick="revealSpeaking()">显示语料原句</button>
       <div id="speakingReveal" class="hidden"></div>`;
   }else{
     area.innerHTML=`
       <div class="testlabel">✍️ 原句回忆默写 · ${session.i+1}/${session.deck.length}</div>
-      ${cueHTML(p)}
-      <div class="muted" style="text-align:center;margin-top:7px">请输入这条语料在词库中 <code>phrase</code> 的完整俄语表达，不是自由翻译。忽略重音符号、大小写、标点和空格差异。</div>
-      <textarea id="answerInput" placeholder="默写俄语原句……" autocapitalize="off" spellcheck="false"></textarea>
-      <button class="primary" style="width:100%;margin-top:10px" onclick="submitWriting()">提交并核对原句</button>
+      <div class="prompt-sticky">${cueHTML(p)}</div>
+      <div class="practice-instruction">默写词库中 phrase 原句，非自由翻译；忽略重音、大小写、标点与空格差异。</div>
+      <textarea id="answerInput" placeholder="默写俄语原句……" aria-label="俄语原句输入" autocapitalize="off" autocomplete="off" spellcheck="false"></textarea>
+      <button class="primary practice-submit" onclick="submitWriting()">提交并核对原句</button>
       <div id="scoreResult"></div>`;
   }
+  // The new question always starts at the top; never leave the phone at a previous result's bottom.
+  window.scrollTo(0,0);
 }
 function submitWriting(){
   if(session.pending){alert("本题已核对，请先记录并进入下一题。");return}
   const p=session.deck[session.i],input=document.getElementById("answerInput");
   const answer=(input&&input.value||"").trim();
   if(!answer){alert("请先默写俄语原句");return}
+  // On iPhone, dismiss the on-screen keyboard before showing the comparison panel.
+  if(input&&typeof input.blur==="function")input.blur();
   const target=p.phrase;
   const r=scoreWriting(p,answer,target);
   document.getElementById("scoreResult").innerHTML=`
@@ -956,6 +998,7 @@ document.getElementById("importBackup").onchange=e=>readJSON(e.target.files[0],x
 
 function showView(id,pushHash=true){
   const target=document.getElementById(id)||document.getElementById("overview");
+  document.body.classList.toggle("practice-mode",target.id==="practice");
   document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v===target));
   document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.view===target.id));
   if(pushHash&&location.hash!=="#"+target.id){
@@ -972,13 +1015,22 @@ document.getElementById("startTranslation").onclick=()=>start("recall");
 document.getElementById("startFunction").onclick=()=>start("recall");
 document.getElementById("startSpeaking").onclick=()=>start("speaking");
 document.getElementById("resumeSession").onclick=resumeSession;
+document.getElementById("exitPractice").onclick=()=>{
+  if(session.pending&&!confirm("本题的核对结果还没有点‘记录并下一题’，返回后需要重新作答本题。确定返回？"))return;
+  session.pending=null;
+  showView("review");
+};
 document.getElementById("discardSession").onclick=()=>{if(confirm("放弃这轮未完成训练？已经记录的成绩不会删除。"))clearSession()};
 
 setupFilters();
 renderOverview();
 renderBrowse();
 renderResume();
-showView((location.hash||"#overview").slice(1),false);
+const initialView=(location.hash||"#overview").slice(1);
+if(initialView==="practice"){
+  // Reloading the dedicated practice screen must restore its saved queue.
+  if(savedSession())resumeSession();else showView("review",false);
+}else showView(initialView,false);
 </script>
 <script>
 TRKIStore.init().then((ok) => {
