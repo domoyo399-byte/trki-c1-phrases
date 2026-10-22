@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>ТРКИ-C1 输出语料库 v2.4 · IndexedDB Candidate</title>
+<title>ТРКИ-C1 输出语料库 v2.4.2 · 精确释义提示 Candidate</title>
 <style>
 :root{
   --bg:#f5f5f8;--p:#fff;--t:#17171a;--m:#777780;--l:#dddde5;
@@ -62,6 +62,10 @@ h3{font-size:16px;margin:0 0 9px}
 .pager span{font-size:12px;color:var(--m);text-align:center}
 .testlabel{text-align:center;color:var(--m);font-size:12px;margin-bottom:12px}
 .prompt{text-align:center;font-size:21px;line-height:1.6}
+.cue-caption{text-align:center;font-size:12px;color:var(--m);margin-bottom:9px;font-weight:700}
+.function-hint{margin:12px 0 4px;padding:10px 12px;border:1px solid var(--l);border-radius:12px;font-size:13px;color:var(--m);line-height:1.65}
+.function-hint summary{text-align:center;font-weight:700}
+.function-hint>div{margin-top:9px}
 .answerbox{margin-top:14px;background:var(--chip);border-radius:13px;padding:13px;line-height:1.7}
 .result{margin-top:14px;padding:14px;border-radius:14px;line-height:1.7}
 .result.ok{background:var(--ok)}.result.mid{background:var(--mid)}.result.bad{background:var(--bad)}
@@ -94,12 +98,12 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
 /* v4.2: Restore native document scrolling and browser pull-to-refresh.
    Removed candidate-v3 viewport/overscroll overrides; original layout CSS unchanged. */
 </style>
-<meta name="trki-candidate-build" content="2026-10-22-four-repo-root-v4">
+<meta name="trki-candidate-build" content="2026-10-22-phrase-recall-v2.4.2">
 </head>
 <body>
 <div class="wrap">
   <div class="hero">
-    <h1>ТРКИ-C1 输出语料库 <span class="version">v2.4</span></h1>
+    <h1>ТРКИ-C1 输出语料库 <span class="version">v2.4.2 Candidate</span></h1>
     <div class="sub">把阅读、听力和写作材料里的高价值表达，变成真正能在写作和口语里调出来的东西。</div>
     <div class="switcher">
       <a href="https://domoyo399-byte.github.io/trki-c1-flashcards/">📚 单词系统</a>
@@ -119,15 +123,15 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
     <div class="panel">
       <div class="grid">
         <div class="stat"><b id="totalN">0</b><span>总语料</span></div>
-        <div class="stat"><b id="translateReadyN">0</b><span>可句子翻译</span></div>
+        <div class="stat"><b id="translateReadyN">0</b><span>已测原句</span></div>
         <div class="stat"><b id="dueN">0</b><span>今日到期</span></div>
-        <div class="stat"><b id="stableN">0</b><span>写作稳定</span></div>
+        <div class="stat"><b id="stableN">0</b><span>原句稳定</span></div>
       </div>
     </div>
     <div class="panel">
       <h3>最快入口</h3>
       <div class="actions">
-        <button class="primary" onclick="start('translation')">✍️ 句子翻译调用</button>
+        <button class="primary" onclick="start('recall')">✍️ 原句回忆默写</button>
         <button onclick="showView('browse')">📖 浏览 / 学习全部语料</button>
       </div>
       <div class="muted" id="coverageText" style="margin-top:9px"></div>
@@ -177,13 +181,13 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
   <section id="review" class="view">
     <h2>今日复习</h2>
     <div class="panel">
-      <button class="primary" id="startTranslation" style="width:100%">✍️ 句子翻译调用（推荐）</button>
+      <button class="primary" id="startTranslation" style="width:100%">✍️ 原句回忆默写（推荐）</button>
       <div class="actions">
-        <button id="startFunction">🧩 功能 → 语料</button>
-        <button id="startSpeaking">🎙️ 口语调用</button>
+        <button id="startFunction">🧩 功能提示 → 原句</button>
+        <button id="startSpeaking">🎙️ 口头回忆原句</button>
       </div>
       <div class="muted" style="margin-top:9px">
-        句子翻译会先给一条中文句子，你把它说/写成俄语；目标不是逐字翻译，而是把这条语料真正调出来。旧语料若暂时没有翻译题，仍可用“功能 → 语料”复习。
+        现在只考库中的 <code>phrase</code> 原有俄语表达：根据原句的具体中文释义，回忆并输入原句。不再出中文整句翻译题。忽略输入重音、大小写和标点；单词形式、顺序必须匹配。开放式翻译留到 ChatGPT 对话框训练。
       </div>
     </div>
 
@@ -211,10 +215,10 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
       <div class="muted" style="margin-top:10px">localStorage key 保持不变：<code>trki_c1_phrase_db_v1</code>。替换网页不会清空你原来的语料和复习记录。</div>
     </div>
     <div class="panel">
-      <h3>句子翻译覆盖</h3>
-      <div class="row"><span>已有翻译题</span><b id="dataReadyN">0</b></div>
-      <div class="row"><span>仍待补充</span><b id="dataMissingN">0</b></div>
-      <div class="muted" style="margin-top:8px">v2.4 会自动补上本轮已知的部分旧语料。今后的同步包则直接写入 <code>translationPrompts</code>，不再靠网页猜。</div>
+      <h3>原句回忆覆盖</h3>
+      <div class="row"><span>有俄语原句</span><b id="dataReadyN">0</b></div>
+      <div class="row"><span>未设置原句</span><b id="dataMissingN">0</b></div>
+      <div class="muted" style="margin-top:8px">当前测试只读取 <code>phrase</code> 作为目标。历史 <code>translationPrompts</code> 原样保存在数据中，供对话框翻译训练使用，不参与网页评分。</div>
     </div>
     <div class="notice" id="dbNotice"></div>
   </section>
@@ -480,6 +484,26 @@ function esc(s=""){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt
 function safeArray(x){return Array.isArray(x)?x:[]}
 function safeTags(p){return safeArray(p.tags).map(String)}
 
+// 中文释义提示索引：仅记录语料 id、原句、对应中文；不包含/修改学习成绩。
+// 来自用户 2026-10-22 总备份的 147 条 phrase，专为原句回忆核对。
+const SOURCE_RECALL_CUES={"not_stolko_skolko":["Речь идёт не столько о…, сколько о…","与其说谈的是……，不如说谈的是……"],"nelzya_ne_uchityvat":["Нельзя не учитывать тот факт, что…","不能不考虑这样一个事实：……"],"ya_by_ne_stala":["Я бы не стала делать столь однозначный вывод.","我不会作出如此绝对的结论。（女性第一人称）"],"ph_rech_idyot_o":["Речь идёт о...","谈论的是……；问题涉及……"],"ph_vostorgi_prezhdevremenny":["Восторги преждевременны.","现在就欢欣鼓舞还为时过早。"],"ph_k_chemu_stavit_v_nelovkoe_polozhenie":["К чему ставить кого-л. в неловкое положение?","何必让某人陷入尴尬的境地？"],"ph_sushchestvovalo_neglasnoe_pravilo":["существовало негласное правило","曾有一条不成文的规定。"],"ph_nemalovazhny_moment":["Это тоже немаловажный момент.","这也是一个不可忽视的重要方面。"],"ph_eto_pravda_no":["Это правда, что…, но…","……确实如此，但是……"],"ph_esli_imeete_v_vidu_ne_a_to":["Если вы имеете в виду не…, а…, то…","如果您指的不是……而是……，那么……"],"ph_daleko_ne_vsegda_byvaet":["… далеко не всегда бывает + Т.","……远不总是……；……并非总会是……"],"ph_vyvod_slishkom_kategorichen":["Этот вывод слишком категоричен.","这个结论太武断了。"],"ph_obladat_ryadom_preimushchestv":["… обладает рядом преимуществ.","……具有一系列优势。"],"ph_idti_kak_po_maslu":["идти как по маслу","进展得非常顺利；一切顺风顺水。"],"ph_nastoyat_na_svoyom":["настоя́ть на своём","坚持自己的主张。"],"ph_sderzhat_obeshchanie":["сдержа́ть обеща́ние","兑现诺言。"],"ph_vstupit_v_brak":["вступи́ть в брак","缔结婚姻；结婚。"],"ph_brak_po_raschyotu":["жениться / выйти замуж по расчёту","出于现实利益考虑而结婚（男女两种说法）。"],"ph_byt_suzhdeno_inf":["быть су́ждено + инф.","注定要做……"],"ph_to_i_delo":["то и де́ло + глагол","不停地／动不动就做……"],"ph_ne_bez_gen":["не без + Р.п.","并非没有……；带着几分……"],"first_love_p001":["пропусти́ть что мимо уше́й","把……当成耳旁风。"],"first_love_p002":["отделя́ть что от чего́","将……与……区分开。"],"first_love_p003":["зави́сеть от + Р.","取决于……"],"first_love_p004":["оказа́ть кому́ по́мощь / услу́гу / подде́ржку","向某人提供帮助／服务／支持。"],"first_love_p005":["по ме́ре сил","尽自己所能。"],"first_love_p006":["не вы́казать смуще́ния","没有流露出窘迫之色。"],"ph_tolko_sobiratsya_kak":["то́лько собира́ться + инф., как...","刚准备做……，这时突然……"],"ph_okazalos_chto":["Оказа́лось, что...","结果发现……；原来……"],"ph_raznositsya_na_ves_dom":["разноси́ться на весь дом / по всему́ до́му","声音传遍整栋房子／整个屋子。"],"ph_zalit_sosedei_snizu":["зали́ть соседе́й сни́зу","把楼下邻居家淹了。"],"ph_chto_u_vas_tut_takoe":["Что у вас тут тако́е?","你们这里怎么回事？"],"ph_i_tut_event":["И тут...","就在这时……"],"p001":["приня́ться за что́","着手做……"],"p002":["не спуска́ть глаз с кого́ / чего́","目不转睛地盯着某人／某物。"],"p003":["склони́ть го́лову набо́к","把头歪向一边。"],"p004":["осужда́ть кого́ за что́","因某事谴责某人。"],"p_20261012_ne_mogu_soglasitsya":["Я не могу́ согласи́ться с тем, что…","我不能同意……这一观点。"],"p_20261012_po_krainei_mere":["по кра́йней ме́ре","至少；起码。"],"p_20261012_ne_mogu_ne":["не могу́ не + инф.","不能不做……"],"p_20261012_kak_mozhno_bolee":["как мо́жно бо́лее + прил./нар.","尽可能更加……"],"p_20261012_niskolko_ne":["ниско́лько не + сравнительная степень / признак","一点也不……"],"p_20261012_skolko_ni":["ско́лько ни + глагол, …","无论……多少次／怎么……，仍然……"],"p_20261012_chto_pobuzhdaet":["Что побужда́ет кого́-либо + инф.?","是什么促使某人去做……？"],"PH-C1-20261013-01":["По этому вопросу я придерживаюсь другого мнения.","在这个问题上，我持有不同意见。"],"PH-C1-20261013-02":["изложить просьбу в официальном письме","在正式信函中陈述请求。"],"PH-C1-20261013-03":["быть подверженным чему-либо","容易受到……影响。"],"PH-C1-20261013-04":["прежде чем + инфинитив","在做……之前。"],"PH-C1-20261013-05":["то ... то ...","一会儿……一会儿……；时而……时而……"],"PH-C1-20261013-06":["рассчитан на + винительный падеж","面向……而设计／适用于……"],"PH-C1-20261013-07":["заслуживать (высокой) оценки","值得（高度）评价。"],"C1-WR-20261013-001":["Готовность кого-либо к чему-либо","某人对某事的准备程度／意愿。"],"C1-WR-20261013-002":["Отношение кого-либо к чему-либо","某人对某事的态度。"],"C1-WR-20261013-003":["По материалам [источника], ...","根据〔某资料来源〕的材料，……"],"C1-WR-20261013-004":["По данным опроса, ...","根据调查数据，……"],"C1-WR-20261013-005":["Согласно результатам опроса, ...","根据调查结果，……"],"C1-WR-20261013-006":["Исследование показало, что ...","研究表明，……"],"C1-WR-20261013-007":["Что касается ..., то ...","至于……，则……"],"C1-WR-20261013-008":["Доля [группы], [характеристика], составляет ... %","具有某特征的〔群体〕所占比例为……％。"],"C1-WR-20261013-009":["[Первая доля] ..., а [вторая доля] — ...","第一项比例是……，而第二项是……〔后项省略重复谓语〕。"],"C1-WR-20261013-010":["Чем ..., тем ...","越……，就越……"],"C1-WR-20261013-011":["Объяснять что-либо тем, что ...","把某事解释为……这一原因。"],"C1-WR-20261013-012":["С уважением, [подпись]","此致敬意，〔署名〕。"],"C1-ACT-20261013-01":["быть в состоянии + инф.","有能力／有条件做……"],"C1-ACT-20261013-02":["делать что-либо каким-либо","使某事变得……〔某种性质〕。"],"C1-ACT-20261013-03":["в ходе + Р.п.","在……过程中。"],"C1-INVOKE-20261014-01":["сле́дует + инфинити́в","应该／应当做……"],"C1-INVOKE-20261014-02":["напра́вленный на + В.п.","旨在……的；以……为目标的。"],"c1-essay-20261014-decisive-both":["Реша́ющую ро́ль игра́ют как …, так и …","……和……都起着决定性作用。"],"c1-essay-20261014-in-itself":["… само́ по себе́ не означа́ет, что …","……本身并不意味着……"],"c1-essay-20261014-depends-on":["Мно́гое зави́сит от того́, как / наско́лько …","很大程度取决于怎样……／在多大程度上……"],"c1-essay-20261014-the-more":["Чем …, тем …","越……，就越……"],"c1-essay-20261014-although-not-say":["Хотя́ …, нельзя́ сказа́ть, что …","尽管……，也不能说……"],"c1-essay-20261014-far-not-all":["Далеко́ не все гото́вы …","远非所有人都准备好……"],"c1-essay-20261014-no-less-important":["Не ме́нее ва́жно …","同样重要的是……"],"c1-essay-20261014-not-only-but":["Необходи́мо не то́лько …, но и …","不仅需要……，还需要……"],"PH-C1-20261014-01":["переоцени́ть свои́ си́лы","高估自己的能力。"],"PH-C1-20261014-02":["сгла́дить нело́вкость","缓和尴尬。"],"PH-C1-20261014-03":["вложи́ть всю ду́шу во что-либо","全身心投入……"],"PH-C1-20261014-04":["не справи́ться с рабо́той в срок","没能按时完成工作。"],"PH-C1-20261014-05":["по ме́ре того́ как…","随着……；当……逐渐发展时……"],"PH-C1-20261014-06":["ни… ни…","既不……也不……"],"PH-C1-20261015-01":["таки́м о́бразом, что…","以这样的方式……，以至于……"],"PH-C1-20261015-02":["Так как…, …","因为……，所以……"],"PH-C1-20261015-03":["пересмотре́ть своё мне́ние","重新审视自己的看法。"],"PH-C1-20261015-04":["в кратча́йшие сро́ки","在最短时间内；尽快。"],"PH-C1-20261015-05":["быть уличённым в чём-либо","被揭发在某事上有不当行为。"],"PH-C1-20261015-06":["не то…, не то…","不是……就是……〔两种不确定的猜测〕。"],"PH-C1-20261019-01":["выдава́ть чу́жое за своё","把别人的东西冒充成自己的。"],"PH-C1-20261019-02":["из-за дли́тельного отсу́тствия","由于长期缺席。"],"PH-C1-20261019-03":["бы́ть дово́льным результа́тами","对结果感到满意。"],"PH-C1-20261019-04":["бы́ть снисходи́тельным к кому́-либо","对某人宽容一些。"],"PH-C1-20261019-05":["долгосро́чный план разви́тия","长期发展规划。"],"PH-C1-20261019-06":["экономи́ческие отноше́ния ме́жду стра́нами","国家之间的经济关系。"],"PH-C1-20261019-07":["при оформле́нии ви́зы","办理签证时。"],"read_1_1_2_phrase_01":["Я не могу́ согласи́ться с + Т.","我不同意……（接介词结构）。"],"read_1_1_2_phrase_02":["по кра́йней ме́ре","至少；起码。"],"read_1_1_2_phrase_03":["явля́ться необходи́мым усло́вием + Р.","是……的必要条件。"],"read_1_1_2_phrase_04":["побужда́ть кого́-либо к + Д. / что сде́лать","促使某人做……；推动某人采取……行动。"],"read_1_1_2_phrase_05":["испы́тывать потре́бность в + П.","感到需要……"],"read_1_1_2_phrase_06":["быть кому́-либо в тя́гость","成为某人的负担。"],"read_1_1_2_phrase_07":["ско́лько ни…, всё / всё равно́…","无论怎样……，仍然／终究……"],"read_1_1_2_phrase_08":["до тако́й сте́пени, что…","达到如此程度，以至于……"],"PH-C1-20261020-01":["при́знан(а/ы) + [五格身份／评价]","被认定为……〔某种身份／评价〕。"],"PH-C1-20261020-02":["досто́ин / досто́йна + Р.п.","值得……〔赞赏／关注等〕。"],"PH-C1-20261020-03":["защище́н(а/ы) + Т.п.","受到……保护。"],"PH-C1-20261020-04":["где бы ни + [过去时动词]","无论在哪里……〔情况都相同〕。"],"PH-C1-20261020-05":["как ни + [过去时动词]","不管怎样努力……〔结果仍未改变〕。"],"PH-C1-20261020-06":["в то вре́мя как + [从句]","而／然而……〔对比两个同时存在的情况〕。"],"PH-C1-20261020-07":["то + [事件A], то + [事件Б]","时而发生……，时而发生……"],"PH-C1-20261020-08":["уделя́ть внима́ние + Д.п.","重视……；给予……关注。"],"read_1_2_1_phrase_01":["по со́бственному жела́нию","出于本人自愿。"],"read_1_2_1_phrase_02":["пойти́ в го́ру","事业／情况开始好转、走上坡路。"],"read_1_2_1_phrase_03":["вы́сказать дога́дку, что…","提出猜测：……"],"read_1_2_1_phrase_04":["располага́ть к + Д.","使人愿意／倾向于……"],"read_1_2_1_phrase_05":["на худо́й коне́ц","实在不行的话；退一步说。"],"read_1_2_1_phrase_06":["дово́льствоваться ма́лым","满足于不多的东西。"],"read_1_2_1_phrase_07":["пройти́ ого́нь, во́ду и ме́дные тру́бы","历尽艰辛、经历种种考验。"],"read_1_2_1_phrase_08":["сквозна́я те́ма","贯穿始终的主题。"],"PH-C1-20261021-01":["По ме́ре того́ как ... , ...","随着……，……也逐渐……"],"PH-C1-20261021-02":["пока́ не + [完成体动词]","一直到……才……"],"PH-C1-20261021-03":["Поско́льку ..., ...","由于……；鉴于……"],"PH-C1-20261021-04":["призна́ть кого́-либо вино́вным в чём-либо","认定某人在某事上有罪。"],"PH-C1-20261021-05":["гуманита́рная по́мощь пострада́вшим от ...","向遭受……的人提供人道主义援助。"],"PH-C1-20261021-06":["пройти́ вы́борочное обсле́дование","接受抽样检查／选择性检查。"],"PH-C1-20261021-07":["быть за́нятым чем-либо","忙于……"],"PH-C1-20261021-08":["в свя́зи с тем, что ...","鉴于……；由于……〔后接完整从句〕。"],"read_1_2_2_p01":["теря́ть вре́мени не́чего","事不宜迟。"],"read_1_2_2_p02":["положи́ться на + В.","依靠／信赖……"],"read_1_2_2_p03":["ни сло́ва о + П.","关于……一个字也别提。"],"read_1_2_2_p04":["чу́вствовать призва́ние к + Д.","感受到从事……的使命感。"],"read_1_2_2_p05":["чем бо́льше…, тем бо́льше…","越多……，就越多……"],"read_1_2_2_p06":["само́ по себе́","就其本身而言。"],"read_1_2_2_p07":["верну́ть с небе́с на зе́млю","让某人从幻想回到现实。"],"read_1_2_2_p08":["не выпя́чивать свои́ тала́нты","不炫耀自己的才能。"],"read_1_2_2_p09":["заручи́ться подде́ржкой + Р.","获得……的支持。"],"read_1_2_2_p10":["предста́вить това́р лицо́м","充分展示商品的优点。"],"C1-BL-20261021-001":["воспользовавшись услугами кого-либо","在使用了某人／某机构的服务之后，……"],"C1-BL-20261021-002":["Обращаемся к вам с претензией по поводу…","我们就……一事向您提出投诉。"],"C1-BL-20261021-003":["ненадлежащим образом выполнять свои обязанности","未能以恰当方式履行自己的职责。"],"C1-BL-20261021-004":["быть вынужденным + 不定式","不得不做……"],"C1-BL-20261021-005":["Просим вас принять соответствующие меры.","请您采取相应措施。"],"C1-BL-20261021-006":["выплатить компенсацию за… в размере…","支付……的赔偿，金额为……"],"C1-BL-20261021-007":["Просим рассмотреть нашу жалобу и сообщить о принятом решении.","请审议我们的投诉，并告知所作决定。"],"C1-INVOKE-20261021-01":["Каки́е фа́кторы влия́ют на…?","哪些因素影响……？"],"C1-INVOKE-20261021-02":["Чем обусло́влен(-а, -о, -ы)…?","……是由什么原因／条件造成的？"],"C1-INVOKE-20261021-03":["Необходи́мо вы́яснить, каки́е фа́кторы…","必须查明有哪些因素……"]};
+function recallCue(p){
+  const explicit=String(p.recallCueZh||'').trim();
+  if(explicit)return {zh:explicit,precise:true};
+  const known=SOURCE_RECALL_CUES[p.id];
+  if(known && norm(known[0])===norm(p.phrase))return {zh:known[1],precise:true};
+  // 只采用确实与 phrase 原句相同的翻译示例；不得任意拿扩写例句充当原句提示。
+  const example=safeArray(p.translationPrompts).find(x=>x?.zh&&norm(x.ru)===norm(p.phrase));
+  if(example)return {zh:String(example.zh),precise:true};
+  return {zh:String(p.functionZh||'回忆这一条俄语原句'),precise:false};
+}
+function cueHTML(p){
+  const cue=recallCue(p);
+  return `<div class="cue-caption">${cue.precise?'原句中文释义':'用途提示（尚无精确中文释义）'}</div>
+    <div class="prompt">${esc(cue.zh)}</div>
+    ${p.functionZh?`<details class="function-hint"><summary>需要提示？展开查看使用场景</summary><div>${esc(p.functionZh)}</div></details>`:''}`;
+}
+
 function cleanTag(t){return String(t||"").trim()}
 const FUNCTION_OPTIONS=[
   "立场评价","反驳","原因结果","转折让步","补充递进","举例说明",
@@ -638,34 +662,32 @@ let session={mode:null,deck:[],i:0,pending:null};
 
 function save(){return TRKIStore.setItem(STORAGE_KEY,JSON.stringify(db))}
 function recent(p,field,n){return safeArray(p[field]).slice(-n)}
+function recallHistory(p){return safeArray(p.writingHistory).filter(x=>x.mode==="recall")}
 function writingAvgOf(p){
-  const h=recent(p,"writingHistory",5).filter(x=>Number.isFinite(Number(x.score)));
-  return h.length?Math.round(h.reduce((s,x)=>s+Number(x.score),0)/h.length):null
+  const h=recallHistory(p).slice(-5).filter(x=>Number.isFinite(Number(x.score)));
+  return h.length?Math.round(h.reduce((sum,x)=>sum+Number(x.score),0)/h.length):null
 }
 function stableWriting(p){
-  const last5=recent(p,"writingHistory",5),last3=recent(p,"writingHistory",3);
-  return last5.length>=5 &&
-    last5.every(x=>Number.isFinite(Number(x.score))) &&
-    last5.reduce((s,x)=>s+Number(x.score),0)/5>=90 &&
-    last3.length>=3 && last3.every(x=>(x.criticalErrors||0)===0)
+  const h=recallHistory(p).slice(-5);
+  return h.length>=5 && h.every(x=>Number(x.score)===100 && Number(x.criticalErrors||0)===0)
 }
 function due(p){const w=p.nextWritingDue||0,s=p.nextSpeakingDue||0;return (w&&w<=Date.now())||(s&&s<=Date.now())||(!w&&!s)}
-function translationReady(p){return normalizeTranslationPrompts(p).length>0}
+function recallReady(p){return !!String(p.phrase||"").trim()}
 
 function renderOverview(){
-  const total=db.phrases.length,ready=db.phrases.filter(translationReady).length;
+  const total=db.phrases.length,ready=db.phrases.filter(recallReady).length;
   document.getElementById("totalN").textContent=total;
-  document.getElementById("translateReadyN").textContent=ready;
+  document.getElementById("translateReadyN").textContent=db.phrases.filter(p=>recallHistory(p).length>0).length;
   document.getElementById("dueN").textContent=db.phrases.filter(due).length;
   document.getElementById("stableN").textContent=db.phrases.filter(stableWriting).length;
   document.getElementById("coverageText").textContent=total
-    ? `当前 ${ready} / ${total} 条语料可以直接做“中文句子 → 俄语”调用；其余旧语料仍可浏览，也可以用功能提示复习。`
-    : "当前数据库是空的。导入每日同步包或恢复语料备份后，这里会自动出现。";
+    ? `全部 ${ready} / ${total} 条有原句的语料都能默写，不再取决于是否有 translationPrompts。已有翻译练习和旧成绩不会删除。`
+    : "当前数据库是空的。请先核对 Hub 的数据库状态，不要用空库覆盖原备份。";
   document.getElementById("dataReadyN").textContent=ready;
   document.getElementById("dataMissingN").textContent=Math.max(0,total-ready);
   document.getElementById("dbNotice").textContent=total
-    ? "✅ 语料数据库已读取。浏览页会明确显示匹配数量，不会再出现一片空白却不告诉你发生了什么。"
-    : "⚠️ 当前 trki_c1_phrase_db_v1 里没有语料。如果你以前的语料在旧版 trki_c1_phrases_v03，v2.4 会自动迁移；若仍为 0，请从学习中心重新导入同步包或恢复完整备份。";
+    ? "✅ 已读取语料库。本测试只考原有 phrase 字段；历史翻译题仍完整保留在备份中。"
+    : "⚠️ 当前数据库没有读到语料，请先检查 Hub 与完整备份。";
 }
 
 function setupFilters(){
@@ -692,7 +714,7 @@ function filteredPhrases(){
   const topic=document.getElementById("topicFilter").value;
   return db.phrases.filter(p=>{
     const m=canonicalMeta(p);
-    const hay=norm([p.phrase,p.functionZh,p.pattern,p.source,...p.transferExamples,...safeTags(p)].join(" "));
+    const hay=norm([p.phrase,recallCue(p).zh,p.functionZh,p.pattern,p.source,...p.transferExamples,...safeTags(p)].join(" "));
     return (!q||hay.includes(q))
       &&(!fn||m.functions.includes(fn))
       &&(!ch||m.channels.includes(ch))
@@ -703,14 +725,14 @@ function filteredPhrases(){
 }
 function phraseCard(p){
   try{
-    const prompts=normalizeTranslationPrompts(p);
     const avg=writingAvgOf(p);
     return `<div class="phrase-card">
       <div class="phrase">${esc(p.phrase)}</div>
-      <div class="function">${esc(p.functionZh||"（未填写中文功能）")}</div>
+      <div class="function"><b>中文释义：</b>${esc(recallCue(p).zh)}</div>
+      <div class="muted">使用场景：${esc(p.functionZh||"（未填写）")}</div>
       <div class="canonmeta">
         ${canonicalBadges(p).map(x=>`<span class="canonbadge ${x.kind}">${esc(x.text)}</span>`).join("")}
-        ${prompts.length?`<span class="badge ready">句子翻译 ×${prompts.length}</span>`:`<span class="badge missing">待补翻译题</span>`}
+        <span class="badge ready">可原句回忆</span>
       </div>
       <details class="carddetails">
         <summary>展开学习详情</summary>
@@ -718,10 +740,10 @@ function phraseCard(p){
           ${p.pattern?`<b>结构 / 替换槽：</b>${esc(p.pattern)}<br>`:""}
           ${p.sourceExample?`<b>来源例句：</b><span class="ru">${esc(p.sourceExample)}</span><br>`:""}
           ${p.transferExamples.length?`<b>迁移例句：</b><br>${p.transferExamples.map(x=>`• <span class="ru">${esc(x)}</span>`).join("<br>")}<br>`:""}
-          ${prompts.length?`<b>句子翻译题：</b><br>${prompts.map(x=>`• ${esc(x.zh)}<br><span class="ru">→ ${esc(x.ru)}</span>`).join("<br>")}<br>`:""}
+          <!-- 翻译训练数据仍保存在 JSON 中，但不在网站测试或学习卡中展示 -->
           ${p.source?`<span class="muted">来源：${esc(p.source)}</span><br>`:""}
           <b>关键骨架：</b>${safeArray(p.evaluator?.critical).map(esc).join(" ｜ ")||"未标注"}
-          ${avg!==null?`<br><span class="muted">最近写作调用平均：${avg}%</span>`:""}
+          ${avg!==null?`<br><span class="muted">最近原句默写正确率：${avg}%</span>`:""}
         </div>
       </details>
     </div>`
@@ -769,16 +791,11 @@ function lev(a,b){
 function similarity(a,b){a=norm(a);b=norm(b);const L=Math.max(a.length,b.length);return L?1-lev(a,b)/L:1}
 function includesPhrase(ans,p){return norm(ans).includes(norm(p))}
 function scoreWriting(p,answer,target){
-  const critical=safeArray(p.evaluator?.critical),key=safeArray(p.evaluator?.key);
-  const criticalMiss=critical.filter(x=>!includesPhrase(answer,x));
-  const keyMiss=key.filter(x=>!includesPhrase(answer,x));
-  const criticalRatio=critical.length?(critical.length-criticalMiss.length)/critical.length:1;
-  const keyRatio=key.length?(key.length-keyMiss.length)/key.length:1;
-  const sim=similarity(answer,target||p.phrase);
-  let score=Math.round(criticalRatio*50+keyRatio*10+sim*40);
-  if(criticalMiss.length)score=Math.min(score,74);
-  if(!criticalMiss.length&&score<80)score=80;
-  return {score:Math.max(0,Math.min(100,score)),criticalErrors:criticalMiss.length,keyErrors:keyMiss.length,criticalMiss,keyMiss,similarity:Math.round(sim*100)}
+  // Strict source-phrase recall; only accents, punctuation, case, spacing and е/ё typing differ.
+  // This intentionally does NOT score a semantically valid translation as a remembered phrase.
+  const exact=norm(answer)===norm(target);
+  return {score:exact?100:0,criticalErrors:exact?0:1,keyErrors:0,
+    criticalMiss:[],keyMiss:[],similarity:Math.round(similarity(answer,target)*100),exact};
 }
 function intervalFromScore(score,criticalErrors){if(criticalErrors>0)return 1;if(score>=95)return 7;if(score>=90)return 4;if(score>=80)return 2;return 1}
 
@@ -788,12 +805,12 @@ function translationTask(p){
   const hist=safeArray(p.writingHistory).filter(x=>x.mode==="translation");
   return arr[hist.length%arr.length]
 }
-function modeName(mode){return mode==="translation"?"句子翻译":mode==="function"?"功能 → 语料":"口语调用"}
+function modeName(mode){return mode==="speaking"?"口头原句回忆":"原句回忆默写"}
 function savedSession(){
   try{
     const s=JSON.parse(TRKIStore.getItem(SESSION_KEY)||"null");
     if(!s||!Array.isArray(s.ids)||!s.mode)return null;
-    if(s.mode==="writing")s.mode="function";
+    if(s.mode==="writing"||s.mode==="translation"||s.mode==="function")s.mode="recall";
     const valid=new Set(db.phrases.map(x=>x.id));
     s.ids=s.ids.filter(id=>valid.has(id));
     s.i=Math.max(0,Math.min(Number(s.i)||0,s.ids.length));
@@ -822,8 +839,9 @@ function resumeSession(){
 
 function start(mode){
   if(!db.phrases.length){alert("当前语料库是空的，先导入语料。");return}
-  let pool=db.phrases.filter(p=>mode!=="translation"||translationReady(p));
-  if(!pool.length){alert("目前还没有可用于句子翻译的语料。旧语料可以先用“功能 → 语料”；以后同步包会自动带 translationPrompts。");return}
+  if(mode==="translation"||mode==="function"||mode==="writing")mode="recall";
+  let pool=db.phrases.filter(recallReady);
+  if(!pool.length){alert("语料库中没有可用的俄语原句。请先检查导入或备份。");return}
   const dueField=mode==="speaking"?"nextSpeakingDue":"nextWritingDue";
   pool=[...pool].sort((a,b)=>{
     const ad=(a[dueField]||0)<=Date.now()?0:1,bd=(b[dueField]||0)<=Date.now()?0:1;
@@ -838,55 +856,44 @@ function renderTest(){
   const area=document.getElementById("testArea");
   if(session.i>=session.deck.length){
     clearSession();
-    area.innerHTML='<div style="text-align:center"><b>这一轮完成了。</b><div class="muted" style="margin-top:8px">复习记录已经更新。</div></div>';
-    renderOverview();renderBrowse();return
+    area.innerHTML='<div style="text-align:center"><b>这一轮完成了。</b><div class="muted" style="margin-top:8px">原句回忆记录已经更新。</div></div>';
+    renderOverview();renderBrowse();return;
   }
   const p=session.deck[session.i];
-  if(session.mode==="translation"){
-    const task=translationTask(p);
-    if(!task){session.i++;persistSession();renderTest();return}
+  if(session.mode==="speaking"){
     area.innerHTML=`
-      <div class="testlabel">✍️ 句子翻译调用 · ${session.i+1}/${session.deck.length}</div>
-      <div class="prompt">${esc(task.zh)}</div>
-      <div class="muted" style="text-align:center;margin-top:7px">把这句话写成自然的俄语，并尽量调用目标语料。不是逐字翻译题。</div>
-      <textarea id="answerInput" placeholder="输入俄语……"></textarea>
-      <button class="primary" style="width:100%;margin-top:10px" onclick="submitWriting()">提交并查看目标表达</button>
-      <div id="scoreResult"></div>`;
-  }else if(session.mode==="function"){
-    area.innerHTML=`
-      <div class="testlabel">🧩 功能 → 语料 · ${session.i+1}/${session.deck.length}</div>
-      <div class="prompt">${esc(p.functionZh)}</div>
-      <div class="muted" style="text-align:center;margin-top:7px">这是兼容旧语料的复习方式。写出你想调用的俄语框架。</div>
-      <textarea id="answerInput" placeholder="输入俄语……"></textarea>
-      <button class="primary" style="width:100%;margin-top:10px" onclick="submitWriting()">提交</button>
-      <div id="scoreResult"></div>`;
-  }else{
-    const task=translationTask(p);
-    area.innerHTML=`
-      <div class="testlabel">🎙️ 口语调用 · ${session.i+1}/${session.deck.length}</div>
-      <div class="prompt">${esc(task?task.zh:p.functionZh)}</div>
-      <div class="notice">先直接开口说俄语，再显示参考。网页只记录你的自评，不假装判断发音或自由表达是否自然。</div>
-      <button class="primary" style="width:100%;margin-top:10px" onclick="revealSpeaking()">显示参考</button>
+      <div class="testlabel">🎙️ 口头原句回忆 · ${session.i+1}/${session.deck.length}</div>
+      ${cueHTML(p)}
+      <div class="notice">先完整说出词库中这条语料的原句，再显示参考并自评。网页不判断发音。</div>
+      <button class="primary" style="width:100%;margin-top:10px" onclick="revealSpeaking()">显示语料原句</button>
       <div id="speakingReveal" class="hidden"></div>`;
+  }else{
+    area.innerHTML=`
+      <div class="testlabel">✍️ 原句回忆默写 · ${session.i+1}/${session.deck.length}</div>
+      ${cueHTML(p)}
+      <div class="muted" style="text-align:center;margin-top:7px">请输入这条语料在词库中 <code>phrase</code> 的完整俄语表达，不是自由翻译。忽略重音符号、大小写、标点和空格差异。</div>
+      <textarea id="answerInput" placeholder="默写俄语原句……" autocapitalize="off" spellcheck="false"></textarea>
+      <button class="primary" style="width:100%;margin-top:10px" onclick="submitWriting()">提交并核对原句</button>
+      <div id="scoreResult"></div>`;
   }
 }
 function submitWriting(){
-  const p=session.deck[session.i],answer=document.getElementById("answerInput").value.trim();
-  if(!answer){alert("先输入答案");return}
-  const task=session.mode==="translation"?translationTask(p):null;
-  const target=task?task.ru:p.phrase;
-  const r=scoreWriting(p,answer,target),cls=r.score>=90&&!r.criticalErrors?"ok":r.score>=70?"mid":"bad";
+  if(session.pending){alert("本题已核对，请先记录并进入下一题。");return}
+  const p=session.deck[session.i],input=document.getElementById("answerInput");
+  const answer=(input&&input.value||"").trim();
+  if(!answer){alert("请先默写俄语原句");return}
+  const target=p.phrase;
+  const r=scoreWriting(p,answer,target);
   document.getElementById("scoreResult").innerHTML=`
-    <div class="result ${cls}">
-      <div class="scorebig">${r.score}%</div>
-      ${r.criticalMiss.length?`<div><b>目标骨架缺失：</b>${r.criticalMiss.map(esc).join("；")}</div>`:'<div><b>目标骨架：</b>已调用</div>'}
-      ${r.keyMiss.length?`<div><b>值得注意：</b>${r.keyMiss.map(esc).join("；")}</div>`:""}
-      <div><b>目标答案：</b><span class="ru">${esc(target)}</span></div>
-      <div><b>核心语料：</b><span class="ru">${esc(p.phrase)}</span></div>
-      <div class="muted">这里主要检查目标语料是否被调出来。若你用了另一种同样自然的俄语，网页不能可靠替你判定，请以对话训练的反馈为准。</div>
+    <div class="result ${r.exact?"ok":"bad"}">
+      <div><b>${r.exact?"✅ 原句正确":"❌ 与词库原句不一致"}</b></div>
+      ${!r.exact?`<div class="muted">相似度仅供查看，不计作答正确率：${r.similarity}%</div>`:""}
+      <div><b>词库原句：</b><span class="ru">${esc(target)}</span></div>
+      <div><b>你的输入：</b><span class="ru">${esc(answer)}</span></div>
+      <div class="muted">本轮只检查原句记忆，不判断自由翻译的表达是否自然。重音、大小写、标点和 е/ё 视为可接受输入差异。</div>
     </div>
-    <button class="primary" style="width:100%;margin-top:10px" onclick="saveWritingResult()">记录并下一题</button>`;
-  session.pending={p,answer,r,mode:session.mode,target}
+    <button class="primary" style="width:100%;margin-top:10px" onclick="saveWritingResult()">${r.exact?"记录正确并下一题":"记录未记住并下一题"}</button>`;
+  session.pending={p,answer,r,mode:"recall",target};
 }
 let phraseRecordSaving=false;
 async function saveWritingResult(){
@@ -899,7 +906,7 @@ async function saveWritingResult(){
   try{await save();session.pending=null;session.i++;await persistSession();renderTest();renderOverview()}catch(e){alert("写入失败，训练已暂停："+e.message)}finally{phraseRecordSaving=false}
 }
 function revealSpeaking(){
-  const p=session.deck[session.i],task=translationTask(p),target=task?task.ru:p.phrase;
+  const p=session.deck[session.i],target=p.phrase;
   const el=document.getElementById("speakingReveal");el.classList.remove("hidden");
   el.innerHTML=`<div class="answerbox"><b>参考：</b><br><span class="phrase" style="font-size:22px">${esc(target)}</span><br><span class="muted">核心语料：${esc(p.phrase)}</span></div>
     <div class="grades"><button onclick="gradeSpeaking(0)">没想起来</button><button onclick="gradeSpeaking(1)">有提示 / 不稳</button><button class="primary" onclick="gradeSpeaking(2)">能主动调用</button></div>`
@@ -961,8 +968,8 @@ document.querySelectorAll(".navbtn").forEach(b=>b.onclick=()=>showView(b.dataset
 window.addEventListener("popstate",()=>showView((location.hash||"#overview").slice(1),false));
 window.addEventListener("hashchange",()=>showView((location.hash||"#overview").slice(1),false));
 
-document.getElementById("startTranslation").onclick=()=>start("translation");
-document.getElementById("startFunction").onclick=()=>start("function");
+document.getElementById("startTranslation").onclick=()=>start("recall");
+document.getElementById("startFunction").onclick=()=>start("recall");
 document.getElementById("startSpeaking").onclick=()=>start("speaking");
 document.getElementById("resumeSession").onclick=resumeSession;
 document.getElementById("discardSession").onclick=()=>{if(confirm("放弃这轮未完成训练？已经记录的成绩不会删除。"))clearSession()};
